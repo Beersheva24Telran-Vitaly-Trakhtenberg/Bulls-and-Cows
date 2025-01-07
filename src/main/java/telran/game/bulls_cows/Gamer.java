@@ -33,4 +33,11 @@ public class Gamer
         }
         return this.birthday;
     }
+
+    public String[] toStringArray()
+    {
+        return new String[]{
+                gamer_name,
+                birthday.toString()};
+    }
 }
