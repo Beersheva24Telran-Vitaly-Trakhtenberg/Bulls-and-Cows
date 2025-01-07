@@ -5,8 +5,11 @@ import telran.game.bulls_cows.common.*;
 
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.random.*;
 
 public class Main
@@ -16,6 +19,8 @@ public class Main
 
     private static Set<String> gamers_names = new HashSet<>();
     private static Gamer[] gamers = new Gamer[Settings.NUMBER_OF_GAMERS];
+    
+    private static Map<String, Game> gaming_map = new HashMap<>();
 
     public static void main(String[] args)  throws IOException
     {
@@ -29,6 +34,13 @@ public class Main
         try {
             generateGamers();
             outputGeneratedGamersToCsv();
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+        }
+        
+        try {
+            gamersStartPlayGames();
+            outputGeneratedGamer2GamesToCsv();
         } catch (IOException e) {
             System.out.println(e.getMessage());
         }
@@ -93,4 +105,38 @@ public class Main
             }
         }
     }
+
+    private static void gamersStartPlayGames() throws IOException
+    {
+        for (Gamer gamer : gamers) {
+            int game_id = -1;
+            int attempt_count = 0;
+            boolean is_finished;
+            do {
+                game_id = RandomGenerator.getDefault().nextInt(Settings.NUMBER_OF_GAMES);
+                attempt_count++;
+            } while (games[game_id].isFinished() && attempt_count < 100);
+            if (attempt_count == 100) {
+                throw new RuntimeException("The gamer '" + gamer.getGamerName() + "' didn't find any unfinished game");
+            }
+            Game game = games[game_id];
+            gaming_map.put(gamer.getGamerName(), game);
+        }
+    }
+
+    private static void outputGeneratedGamer2GamesToCsv() throws IOException {
+        try (CSVWriter writer = new CSVWriter(new FileWriter(Settings.GAMERS2GAMES_DATA_FILE_PATH))) {
+            AtomicInteger gaming_id = new AtomicInteger(1);
+            gaming_map.forEach((gamer_id, game) -> {
+                writer.writeNext(new String[]{
+                        String.valueOf(gaming_id.get()),
+                        String.valueOf(game.getGameID()),
+                        gamer_id,
+                        String.valueOf(false)
+                });
+                gaming_id.getAndIncrement();
+            });
+        }
+    }
+
 }
