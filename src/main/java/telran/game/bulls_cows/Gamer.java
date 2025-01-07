@@ -1,11 +1,12 @@
 package telran.game.bulls_cows;
 
+import telran.game.bulls_cows.common.CsvConvertible;
 import telran.game.bulls_cows.common.Tools;
 
 import java.time.LocalDate;
 import java.time.Month;
 
-public class Gamer
+public class Gamer implements CsvConvertible
 {
     private final String gamer_name;
     private LocalDate start = LocalDate.now().minusYears(65);
@@ -34,6 +35,7 @@ public class Gamer
         return this.birthday;
     }
 
+    @Override
     public String[] toStringArray()
     {
         return new String[]{

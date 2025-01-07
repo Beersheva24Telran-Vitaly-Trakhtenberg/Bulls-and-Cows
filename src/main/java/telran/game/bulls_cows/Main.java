@@ -26,19 +26,11 @@ public class Main
     {
         try {
             generateGames();
-            outputGeneratedGamesToCsv();
-        } catch (IOException e) {
-            System.out.println(e.getMessage());
-        }
+            outputToCsv(Set.of(games), Settings.GAMES_DATA_FILE_PATH);
 
-        try {
             generateGamers();
-            outputGeneratedGamersToCsv();
-        } catch (IOException e) {
-            System.out.println(e.getMessage());
-        }
-        
-        try {
+            outputToCsv(Set.of(gamers), Settings.GAMERS_DATA_FILE_PATH);
+
             gamersStartPlayGames();
             outputGeneratedGamer2GamesToCsv();
         } catch (IOException e) {
@@ -64,19 +56,6 @@ public class Main
         }
     }
 
-    private static void outputGeneratedGamesToCsv() throws IOException {
-        try (CSVWriter writer = new CSVWriter(new FileWriter(Settings.GAMES_DATA_FILE_PATH))) {
-            for (Game game : games) {
-                writer.writeNext(new String[]{
-                        Integer.toString(game.getGameID()),
-                        game.getTimeStarting(),
-                        Boolean.toString(game.isFinished()),
-                        game.getSequence(),
-                        game.isFinished() ? game.getTimeFinishing() : null
-                });
-            }
-        }
-    }
     private static void generateGamers() throws IOException
     {
         RandomGenerator generator = RandomGenerator.getDefault();
@@ -86,7 +65,7 @@ public class Main
             String gamer_name;
             do {
                 gamer_name = tmp_names[generator.nextInt(tmp_names.length)] + "_" + String.valueOf(1 + generator.nextInt(1000));
-            } while (games_ids.contains(gamer_name));
+            } while (gamers_names.contains(gamer_name));
 
             Gamer gamer = new Gamer(gamer_name);
 
@@ -95,13 +74,19 @@ public class Main
         }
     }
 
-    private static void outputGeneratedGamersToCsv() throws IOException {
-        try (CSVWriter writer = new CSVWriter(new FileWriter(Settings.GAMERS_DATA_FILE_PATH))) {
-            for (Gamer gamer : gamers) {
-                writer.writeNext(new String[]{
-                        gamer.getGamerName(),
-                        gamer.getBirthday().toString()
-                });
+    private static void outputToCsv(@org.jetbrains.annotations.NotNull Set<? extends CsvConvertible> objects, String filePath) throws IOException
+    {
+        try (CSVWriter writer = new CSVWriter(new FileWriter(filePath),
+                CSVWriter.DEFAULT_SEPARATOR,
+                CSVWriter.NO_QUOTE_CHARACTER,
+                CSVWriter.DEFAULT_ESCAPE_CHARACTER,
+                CSVWriter.DEFAULT_LINE_END))
+        {
+            for (CsvConvertible obj : objects) {
+                String[] line = obj.toStringArray();
+                if (line != null && line.length > 0) {
+                    writer.writeNext(line, false);
+                }
             }
         }
     }
@@ -138,5 +123,4 @@ public class Main
             });
         }
     }
-
 }
