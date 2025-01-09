@@ -5,12 +5,10 @@ import telran.game.bulls_cows.common.*;
 
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.random.*;
+import java.util.stream.Collectors;
 
 public class Main
 {
@@ -21,6 +19,8 @@ public class Main
     private static Gamer[] gamers = new Gamer[Settings.NUMBER_OF_GAMERS];
     
     private static Map<String, Game> gaming_map = new HashMap<>();
+    private static Set<GamerGame> gamers4game = new HashSet<>();
+    private static Map<Integer, GamerMoves> gamer_moves = new HashMap<>();
 
     public static void main(String[] args)  throws IOException
     {
@@ -36,6 +36,8 @@ public class Main
         } catch (IOException e) {
             System.out.println(e.getMessage());
         }
+
+        gamePlayProcess();
     }
 
     private static void generateGames() throws IOException
@@ -109,18 +111,90 @@ public class Main
         }
     }
 
-    private static void outputGeneratedGamer2GamesToCsv() throws IOException {
+    private static void outputGeneratedGamer2GamesToCsv() throws IOException 
+    {
         try (CSVWriter writer = new CSVWriter(new FileWriter(Settings.GAMERS2GAMES_DATA_FILE_PATH))) {
             AtomicInteger gaming_id = new AtomicInteger(1);
-            gaming_map.forEach((gamer_id, game) -> {
+            gaming_map.forEach((gamer_name, game) -> {
                 writer.writeNext(new String[]{
                         String.valueOf(gaming_id.get()),
                         String.valueOf(game.getGameID()),
-                        gamer_id,
+                        gamer_name,
                         String.valueOf(false)
                 });
+                gamers4game.add(new GamerGame(gaming_id.get(), gamer_name, game.getGameID()));
                 gaming_id.getAndIncrement();
             });
         }
+    }
+    
+    private static void gamePlayProcess() throws IOException
+    {
+        try(CSVWriter writer = new CSVWriter(new FileWriter(Settings.MOVES_GAMERS_DATA_FILE_PATH),
+                    CSVWriter.DEFAULT_SEPARATOR,
+                    CSVWriter.NO_QUOTE_CHARACTER,
+                    CSVWriter.DEFAULT_ESCAPE_CHARACTER,
+                    CSVWriter.DEFAULT_LINE_END)) {
+            for (int i = 0; i < 5; i++) {
+                gaming_map.entrySet().stream()
+                    .filter(entry -> !entry.getValue().isFinished())
+                    .forEach(entry -> {
+                        String gamer_name = entry.getKey();
+                        Game game = entry.getValue();
+                        Optional<Integer> gamer4game_id = gamers4game.stream()
+                                .filter(gg -> gg.gamer_name().equals(gamer_name) && gg.game_id() == game.getGameID())
+                                .map(GamerGame::gamer4game_id)
+                                .findFirst();
+
+                        int move_id;
+                        int attempt_number;
+                        int gamer_game_id;
+                        Set<String> attemps;
+                        Moves move;
+
+                        if (gamer4game_id.isPresent()) {
+                            gamer_game_id = gamer4game_id.get();
+                            attemps = gamer_moves.values().stream()
+                                    .filter(gm -> gm.gamer4game_id() == gamer_game_id)
+                                    .map(GamerMoves::secuence)
+                                    .collect(Collectors.toSet());
+                            attempt_number = attemps.size() + 1;
+                        } else {
+                            gamer_game_id = createNewGamerGameId(gamer_name, game.getGameID());
+                            attempt_number = 1;
+                            attemps = new HashSet<>();
+                        }
+                        move = new Moves(game.getSequence(), attemps);
+                        move.nextMove();
+                        String gamer_sequence = move.getLastSequence();
+                        Integer[] result = move.getLastResult();
+                        boolean is_finished = move.isFinished();
+                        move_id = gamer_moves.size() + 1;
+                        gamer_moves.put(move_id, new GamerMoves(move_id, gamer_game_id, gamer_sequence, result[0], result[1], attempt_number));
+
+                        writer.writeNext(new String[]{
+                                String.valueOf(move_id),
+                                String.valueOf(gamer_game_id),
+                                gamer_sequence,
+                                String.valueOf(result[0]),
+                                String.valueOf(result[1])/*,
+                        String.valueOf(attempt_number),
+                        String.valueOf(is_finished)*/
+                        });
+
+                        if (is_finished) {
+                            game.finishGame();
+                        }
+                    });
+
+            }
+        }
+    }
+
+    private static int createNewGamerGameId(String gamer_name, int game_id)
+    {
+        int new_gamer_game_id = gamers4game.size() + 1;
+        gamers4game.add(new GamerGame(new_gamer_game_id, gamer_name, game_id));
+        return new_gamer_game_id;
     }
 }

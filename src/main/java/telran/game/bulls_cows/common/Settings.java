@@ -10,4 +10,5 @@ public class Settings
     public static final String GAMES_DATA_FILE_PATH = "games_data.csv";
     public static final String GAMERS_DATA_FILE_PATH = "gamers_data.csv";
     public static final String GAMERS2GAMES_DATA_FILE_PATH = "gamers2games_data.csv";
+    public static final String MOVES_GAMERS_DATA_FILE_PATH = "moves_gamers_data.csv";
 }
