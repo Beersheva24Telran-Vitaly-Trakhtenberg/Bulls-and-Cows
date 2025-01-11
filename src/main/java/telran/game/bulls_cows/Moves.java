@@ -74,7 +74,7 @@ public class Moves
 
     private void generateSequenceBasedPreviousResults()
     {
-        String sequence = null;
+        String sequence;
         if (this.result == null || (this.result[0] == 0 && this.result[1] == 0)) {
             do {
                 sequence = Tools.generateSequence();

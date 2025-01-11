@@ -135,6 +135,7 @@ public class Main
                     CSVWriter.NO_QUOTE_CHARACTER,
                     CSVWriter.DEFAULT_ESCAPE_CHARACTER,
                     CSVWriter.DEFAULT_LINE_END)) {
+
             for (int i = 0; i < 5; i++) {
                 gaming_map.entrySet().stream()
                     .filter(entry -> !entry.getValue().isFinished())
@@ -154,10 +155,12 @@ public class Main
 
                         if (gamer4game_id.isPresent()) {
                             gamer_game_id = gamer4game_id.get();
+
                             attemps = gamer_moves.values().stream()
                                     .filter(gm -> gm.gamer4game_id() == gamer_game_id)
                                     .map(GamerMoves::secuence)
                                     .collect(Collectors.toSet());
+
                             attempt_number = attemps.size() + 1;
                         } else {
                             gamer_game_id = createNewGamerGameId(gamer_name, game.getGameID());
@@ -170,7 +173,18 @@ public class Main
                         Integer[] result = move.getLastResult();
                         boolean is_finished = move.isFinished();
                         move_id = gamer_moves.size() + 1;
-                        gamer_moves.put(move_id, new GamerMoves(move_id, gamer_game_id, gamer_sequence, result[0], result[1], attempt_number));
+                        gamer_moves.put(
+                                move_id,
+                                new GamerMoves(
+                                        move_id,
+                                        gamer_game_id,
+                                        gamer_sequence,
+                                        result[0],
+                                        result[1],
+                                        attempt_number
+                                )
+                        );
+                        attemps.add(gamer_sequence);
 
                         writer.writeNext(new String[]{
                                 String.valueOf(move_id),
@@ -186,7 +200,6 @@ public class Main
                             game.finishGame();
                         }
                     });
-
             }
         }
     }
