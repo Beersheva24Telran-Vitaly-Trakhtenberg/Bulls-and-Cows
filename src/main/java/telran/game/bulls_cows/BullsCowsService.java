@@ -1,8 +1,7 @@
 package telran.game.bulls_cows;
 
 import telran.game.bulls_cows.common.SessionToken;
-import telran.game.bulls_cows.exceprions.UsernameAlreadyExistsException;
-import telran.game.bulls_cows.exceprions.UsernameNotFoundException;
+import telran.game.bulls_cows.exceprions.*;
 
 import javax.naming.AuthenticationException;
 import java.time.LocalDate;
