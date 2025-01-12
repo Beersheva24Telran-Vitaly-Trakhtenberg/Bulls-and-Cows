@@ -9,7 +9,7 @@ import java.util.List;
 
 public interface BullsCowsService
 {
-    SessionToken logIn(String gamerName) throws UsernameNotFoundException;
+    SessionToken logIn(String gamerName) throws UserNotFoundException;
     void logOut(SessionToken gamerToken) throws AuthenticationException;
     SessionToken signUp(String gamerName, LocalDate birthday) throws UsernameAlreadyExistsException,IllegalArgumentException;
 
