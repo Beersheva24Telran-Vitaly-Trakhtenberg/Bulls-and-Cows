@@ -1,6 +1,8 @@
 package telran.game.bulls_cows.exceprions;
 
-public class GameNotFoundException extends Exception {
+import java.util.NoSuchElementException;
+
+public class GameNotFoundException extends NoSuchElementException {
     public GameNotFoundException(int gameId) {
         super("The game [id=" + gameId + "] is not found.");
     }
