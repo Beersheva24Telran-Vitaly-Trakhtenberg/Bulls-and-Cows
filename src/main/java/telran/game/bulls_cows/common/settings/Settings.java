@@ -1,4 +1,4 @@
-package telran.game.bulls_cows.common;
+package telran.game.bulls_cows.common.settings;
 
 public class Settings
 {

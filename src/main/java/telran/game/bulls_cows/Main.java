@@ -2,6 +2,7 @@ package telran.game.bulls_cows;
 
 import com.opencsv.CSVWriter;
 import telran.game.bulls_cows.common.*;
+import telran.game.bulls_cows.common.settings.Settings;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -50,7 +51,7 @@ public class Main
                 game_id = 1 + generator.nextInt(1000);
             } while (games_ids.contains(game_id));
 
-            Game game = new Game(game_id);
+            Game game = new Game();
             game.startGame();
 
             games_ids.add(game_id);
@@ -204,7 +205,7 @@ public class Main
         }
     }
 
-    private static int createNewGamerGameId(String gamer_name, int game_id)
+    private static int createNewGamerGameId(String gamer_name, Long game_id)
     {
         int new_gamer_game_id = gamers4game.size() + 1;
         gamers4game.add(new GamerGame(new_gamer_game_id, gamer_name, game_id));

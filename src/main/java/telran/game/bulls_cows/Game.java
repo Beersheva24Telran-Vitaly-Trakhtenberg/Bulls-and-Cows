@@ -1,64 +1,78 @@
 package telran.game.bulls_cows;
 
+import jakarta.persistence.*;
+import jakarta.persistence.GenerationType;
 import telran.game.bulls_cows.common.CsvConvertible;
 import telran.game.bulls_cows.common.Tools;
 
 import java.time.LocalDateTime;
 
+@Entity
 public class Game implements CsvConvertible
 {
-    private final int game_id;
-    private String sequence;
-    private LocalDateTime date_starting;
-    private LocalDateTime date_finish = null;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
+    private Long gameId;
 
-    public Game(int game_id) {
-        this.game_id = game_id;
-    }
+    @Column(name="time_start")
+    private LocalDateTime startDateTime;
+
+    @Column(name="time_finish")
+    private LocalDateTime finishDateTime;
+
+    private String sequence;
+
+    public Game() {    }
 
     public void startGame() {
         this.sequence = Tools.generateSequence();
-        this.date_starting = LocalDateTime.now();
+        this.startDateTime = LocalDateTime.now();
     }
 
     public String getTimeStart() {
-        return date_starting.toString();
+        return startDateTime.toString();
+    }
+
+    public boolean isStarted() {
+        return startDateTime != null && startDateTime.isBefore(LocalDateTime.now());
     }
 
     public boolean isFinished() {
-        return date_finish != null;
+        return finishDateTime != null;
     }
 
     public void finishGame() {
-        if (date_finish == null) {
-            this.date_finish = LocalDateTime.now();
+        if (finishDateTime == null) {
+            this.finishDateTime = LocalDateTime.now();
         }
     }
 
     public String getTimeFinish() {
-        if (date_finish == null) {
+        if (finishDateTime == null) {
             throw new RuntimeException("The game isn't finished yet");
         }
-        return date_finish.toString();
+        return finishDateTime.toString();
     }
 
     public String getSequence() {
         return this.sequence;
     }
 
-    public int getGameID() {
-        return this.game_id;
+    public Long getGameID() {
+        return this.gameId;
     }
 
     @Override
     public String[] toStringArray()
     {
         return new String[] {
-                Integer.toString(game_id),
-                date_starting.toString(),
+                Long.toString(gameId),
+                isStarted() ? startDateTime.toString() : null,
+                Boolean.toString(isStarted()),
                 Boolean.toString(isFinished()),
                 sequence,
-                isFinished() ? date_finish.toString() : null
+                isFinished() ? finishDateTime.toString() : null
         };
     }
 }

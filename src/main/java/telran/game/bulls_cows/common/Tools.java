@@ -1,5 +1,7 @@
 package telran.game.bulls_cows.common;
 
+import telran.game.bulls_cows.common.settings.Settings;
+
 import java.time.LocalDate;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;

@@ -1,6 +1,6 @@
 package telran.game.bulls_cows;
 
-import telran.game.bulls_cows.common.Settings;
+import telran.game.bulls_cows.common.settings.Settings;
 import telran.game.bulls_cows.common.Tools;
 
 import java.util.Set;
