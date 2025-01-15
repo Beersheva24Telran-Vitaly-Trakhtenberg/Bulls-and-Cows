@@ -1,26 +1,53 @@
 package telran.game.bulls_cows;
 
+import jakarta.persistence.*;
 import telran.game.bulls_cows.common.CsvConvertible;
+import telran.game.bulls_cows.common.SessionToken;
 import telran.game.bulls_cows.common.Tools;
 
 import java.time.LocalDate;
-import java.time.Month;
 
+@Entity
+@Table(name = "GAMERS")
 public class Gamer implements CsvConvertible
 {
-    private final String gamer_name;
-    private LocalDate start = LocalDate.now().minusYears(65);
-    private LocalDate end = LocalDate.now().minusYears(18);
+    @Id
+    @Column(name = "username")
+    private String gamer_name;
+
+    @Column(name = "birthday")
     private LocalDate birthday;
 
+    @Transient
+    private SessionToken token;
+    @Transient
+    private LocalDate fromYearBirth = LocalDate.now().minusYears(65);
+    @Transient
+    private LocalDate uptoYearBirth = LocalDate.now().minusYears(18);
+
+    public Gamer() {
+
+    }
     public Gamer(String gamer_name) {
         this.gamer_name = gamer_name;
         createBirthday();
     }
+    public Gamer(String gamer_name, LocalDate birthday) {
+        this.gamer_name = gamer_name;
+        this.birthday = birthday;
+    }
+
+    private SessionToken getToken() {
+        return token;
+    }
+
+    private void setToken(SessionToken token) {
+        this.token = token;
+    }
 
     private void createBirthday()
     {
-        this.birthday = Tools.between(start, end);
+        this.birthday = Tools.between(fromYearBirth, uptoYearBirth);
     }
 
     public String getGamerName() {

@@ -14,6 +14,11 @@ import jakarta.persistence.spi.ClassTransformer;
 import jakarta.persistence.spi.PersistenceUnitInfo;
 import jakarta.persistence.spi.PersistenceUnitTransactionType;
 
+import telran.game.bulls_cows.Game;
+import telran.game.bulls_cows.GamerGameRecord;
+import telran.game.bulls_cows.Gamer;
+import telran.game.bulls_cows.GamerMovesRecord;
+
 public class BullsCowsPersistenceUnitInfo implements PersistenceUnitInfo{
 
     @Override
@@ -38,23 +43,22 @@ public class BullsCowsPersistenceUnitInfo implements PersistenceUnitInfo{
 
     @Override
     public PersistenceUnitTransactionType getTransactionType() {
-        return null;
+        return PersistenceUnitTransactionType.RESOURCE_LOCAL;
     }
 
     @Override
     public DataSource getJtaDataSource() {
-        return null;
-    }
-
-    @Override
-    public DataSource getNonJtaDataSource() {
         HikariDataSource ds = new HikariDataSource();
-        ds.setJdbcUrl(String.format("jdbc:postgresql://%s:5432/postgres",
-                System.getenv("POSTGRES_HOST")));
+        ds.setJdbcUrl(String.format("jdbc:postgresql://%s:5432/postgres", System.getenv("POSTGRES_HOST")));
         ds.setPassword(System.getenv("POSTGRES_PASSWORD"));
         ds.setUsername("postgres");
         ds.setDriverClassName("org.postgresql.Driver");
         return ds;
+    }
+
+    @Override
+    public DataSource getNonJtaDataSource() {
+        return null;
     }
 
     @Override
@@ -74,8 +78,10 @@ public class BullsCowsPersistenceUnitInfo implements PersistenceUnitInfo{
 
     @Override
     public List<String> getManagedClassNames() {
-        return List.of("telran.queries.entities.Game","telran.queries.entities.GameGamer",
-                "telran.queries.entities.Gamer","telran.queries.entities.Move");
+        return List.of(Game.class.getName(), GamerGameRecord.class.getName(),
+                Gamer.class.getName(), GamerMovesRecord.class.getName());
+        //        return Collections.singletonList(Game.class.getName());
+
     }
 
     @Override
@@ -95,7 +101,9 @@ public class BullsCowsPersistenceUnitInfo implements PersistenceUnitInfo{
 
     @Override
     public Properties getProperties() {
-        return null;
+        Properties properties = new Properties();
+        properties.put("hibernate.dialect", "org.hibernate.dialect.PostgreSQLDialect");
+        return properties;
     }
 
     @Override

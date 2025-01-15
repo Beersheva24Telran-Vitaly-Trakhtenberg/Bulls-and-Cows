@@ -20,8 +20,8 @@ public class Main
     private static Gamer[] gamers = new Gamer[Settings.NUMBER_OF_GAMERS];
     
     private static Map<String, Game> gaming_map = new HashMap<>();
-    private static Set<GamerGame> gamers4game = new HashSet<>();
-    private static Map<Integer, GamerMoves> gamer_moves = new HashMap<>();
+    private static Set<GamerGameRecord> gamers4game = new HashSet<>();
+    private static Map<Integer, GamerMovesRecord> gamer_moves = new HashMap<>();
 
     public static void main(String[] args)  throws IOException
     {
@@ -123,7 +123,7 @@ public class Main
                         gamer_name,
                         String.valueOf(false)
                 });
-                gamers4game.add(new GamerGame(gaming_id.get(), gamer_name, game.getGameID()));
+                gamers4game.add(new GamerGameRecord(gaming_id.get(), gamer_name, game.getGameID()));
                 gaming_id.getAndIncrement();
             });
         }
@@ -145,7 +145,7 @@ public class Main
                         Game game = entry.getValue();
                         Optional<Integer> gamer4game_id = gamers4game.stream()
                                 .filter(gg -> gg.gamer_name().equals(gamer_name) && gg.game_id() == game.getGameID())
-                                .map(GamerGame::gamer4game_id)
+                                .map(GamerGameRecord::gamer4game_id)
                                 .findFirst();
 
                         int move_id;
@@ -159,7 +159,7 @@ public class Main
 
                             attemps = gamer_moves.values().stream()
                                     .filter(gm -> gm.gamer4game_id() == gamer_game_id)
-                                    .map(GamerMoves::secuence)
+                                    .map(GamerMovesRecord::secuence)
                                     .collect(Collectors.toSet());
 
                             attempt_number = attemps.size() + 1;
@@ -176,7 +176,7 @@ public class Main
                         move_id = gamer_moves.size() + 1;
                         gamer_moves.put(
                                 move_id,
-                                new GamerMoves(
+                                new GamerMovesRecord(
                                         move_id,
                                         gamer_game_id,
                                         gamer_sequence,
@@ -208,7 +208,7 @@ public class Main
     private static int createNewGamerGameId(String gamer_name, Long game_id)
     {
         int new_gamer_game_id = gamers4game.size() + 1;
-        gamers4game.add(new GamerGame(new_gamer_game_id, gamer_name, game_id));
+        gamers4game.add(new GamerGameRecord(new_gamer_game_id, gamer_name, game_id));
         return new_gamer_game_id;
     }
 }

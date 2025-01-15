@@ -25,4 +25,5 @@ public interface BullsCowsRepository
     List<Game> findAllStartedGames();
     List<Game> findAllFinishedGames();
     int CreateGame(String secuence);
+    Game findGameById(Long gameId) throws GameNotFoundException;
 }

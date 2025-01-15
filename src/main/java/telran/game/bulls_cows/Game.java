@@ -1,13 +1,14 @@
 package telran.game.bulls_cows;
 
 import jakarta.persistence.*;
-import jakarta.persistence.GenerationType;
+
 import telran.game.bulls_cows.common.CsvConvertible;
 import telran.game.bulls_cows.common.Tools;
 
 import java.time.LocalDateTime;
 
 @Entity
+@Table(name="GAMES")
 public class Game implements CsvConvertible
 {
     @Id
@@ -15,10 +16,10 @@ public class Game implements CsvConvertible
     @Column(name = "id")
     private Long gameId;
 
-    @Column(name="time_start")
+    @Column(name="datetime_start")
     private LocalDateTime startDateTime;
 
-    @Column(name="time_finish")
+    @Column(name="datetime_finish")
     private LocalDateTime finishDateTime;
 
     private String sequence;

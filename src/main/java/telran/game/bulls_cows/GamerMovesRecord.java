@@ -1,6 +1,6 @@
 package telran.game.bulls_cows;
 
-public record GamerMoves(
+public record GamerMovesRecord(
         int move_id,
         int gamer4game_id,
         String secuence,

@@ -15,6 +15,10 @@ public class SessionToken
 
     private void generateToken(String user)
     {
-        this.token = user + System.currentTimeMillis();
+        this.token = user + "@" + System.currentTimeMillis();
+    }
+
+    public String toString() {
+        return token;
     }
 }

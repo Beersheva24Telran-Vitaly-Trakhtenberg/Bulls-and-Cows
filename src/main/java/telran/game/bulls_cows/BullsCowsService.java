@@ -13,6 +13,7 @@ public interface BullsCowsService
 {
     SessionToken logIn(String gamerName) throws UserNotFoundException;
     void logOut(SessionToken gamerToken) throws AuthenticationException;
+    void isSessionTokenValid(SessionToken gamerToken) throws AuthenticationException;
 
     /**
      * Registers new user
@@ -28,6 +29,7 @@ public interface BullsCowsService
     void joinGame(SessionToken gamerToken, Long game_id) throws AuthenticationException;
     void startGame(SessionToken gamerToken, Long game_id) throws AuthenticationException;
     void startGame(SessionToken gamerToken, Long game_id, String dateTimeStart) throws AuthenticationException;
+    boolean isGameStarted(Long game_id) throws GameNotFoundException;
 
     List<Long> getAvailabledGamesForStarting(SessionToken gamerToken) throws AuthenticationException;
     List<Long> getAvailabledGamesForJoining(SessionToken gamerToken) throws AuthenticationException;
