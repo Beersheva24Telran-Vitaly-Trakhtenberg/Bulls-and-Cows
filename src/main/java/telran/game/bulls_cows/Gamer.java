@@ -8,7 +8,7 @@ import telran.game.bulls_cows.common.Tools;
 import java.time.LocalDate;
 
 @Entity
-@Table(name = "GAMERS")
+@Table(name = "gamers", uniqueConstraints = {@UniqueConstraint(columnNames = "username")})
 public class Gamer implements CsvConvertible
 {
     @Id

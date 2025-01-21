@@ -18,6 +18,11 @@ public class SessionToken
         this.token = user + "@" + System.currentTimeMillis();
     }
 
+    public String getUsername()
+    {
+        return token.split("@")[0];
+    }
+
     public String toString() {
         return token;
     }

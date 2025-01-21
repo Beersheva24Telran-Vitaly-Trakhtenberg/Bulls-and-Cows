@@ -3,19 +3,16 @@ package telran.game.bulls_cows;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 import org.hibernate.jpa.HibernatePersistenceProvider;
+import org.json.JSONObject;
 import telran.game.bulls_cows.common.settings.BullsCowsPersistenceUnitInfo;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-
 import telran.game.bulls_cows.common.SessionToken;
 import telran.game.bulls_cows.exceprions.*;
+import telran.game.bulls_cows.repository.BullsCowsRepository;
+import telran.game.bulls_cows.repository.BullsCowsRepositoryImpl;
 import telran.net.*;
 import telran.view.InputOutput;
 import telran.view.StandardInputOutput;
 
-import javax.naming.AuthenticationException;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -25,7 +22,7 @@ public class GameServer implements Runnable, Protocol
 {
     //private static final Logger logger = LoggerFactory.getLogger(GameServer.class);
 
-    static InputOutput io = new StandardInputOutput();
+    protected static InputOutput io = new StandardInputOutput();
     private static EntityManager em;
     private static EntityManagerFactory emf;
 
@@ -36,22 +33,11 @@ public class GameServer implements Runnable, Protocol
 
     public static void main(String[] args) throws IOException
     {
-/*
-        HashMap<String, Object> hibernateProperties = new HashMap<>();
-        hibernateProperties.put("hibernate.hbm2ddl.auto","update");
-        PersistenceUnitInfo persistenceUnit = new BullsCowsPersistenceUnitInfo();
-        HibernatePersistenceProvider hibernatePersistenceProvider = new HibernatePersistenceProvider();
-        EntityManagerFactory emf =
-                hibernatePersistenceProvider.createContainerEntityManagerFactory(persistenceUnit, hibernateProperties);
-        em = emf.createEntityManager();
-*/
-
         BullsCowsPersistenceUnitInfo persistenceUnitInfo = new BullsCowsPersistenceUnitInfo();
         HibernatePersistenceProvider provider = new HibernatePersistenceProvider();
         emf = provider.createContainerEntityManagerFactory(persistenceUnitInfo, null);
 
-        //PersistenceProvider provider = new org.hibernate.jpa.HibernatePersistenceProvider();
-        testConnection(emf);
+        testDBConnection(emf);
         GameServer server = new GameServer();
         server.startServer();
     }
@@ -65,49 +51,14 @@ public class GameServer implements Runnable, Protocol
         return PORT;
     }
 
-    private static void testConnection(EntityManagerFactory emf) {
+    private static void testDBConnection(EntityManagerFactory emf)
+    {
         try {
             emf.createEntityManager().close();
-            System.out.println("DB Connection successful");
+            io.writeLine("DB Connection successful");
         } catch (Exception e) {
             e.printStackTrace();
-            System.out.println("DB Connection failed");
-        }
-    }
-
-    private void testServer(String method) throws IOException
-    {
-        switch (method) {
-            case "signUp":
-                try {
-                    SessionToken newUser = service.signUp("Vasya", "16-08-1971");
-                    System.out.println(newUser.getToken());
-                    user = newUser;
-                } catch (IllegalArgumentException e) {
-                    throw new RuntimeException(e);
-                } catch (UserAlreadyExistsException e) {
-                    System.out.println(e.getMessage());
-                }
-                break;
-            case "logIn":
-                try {
-                    SessionToken existedUser = service.logIn("ViT");
-                    System.out.println(existedUser);
-                    user = existedUser;
-                } catch (UserNotFoundException e) {
-                    throw new RuntimeException(e);
-                }
-                break;
-            case "createGame":
-                try {
-                    Long game_id = service.createGame(user);
-                    System.out.println(game_id);
-                } catch (AuthenticationException e) {
-                    throw new RuntimeException(e);
-                }
-                break;
-            default:
-                System.out.println("Wrong method");
+            io.writeLine("DB Connection failed");
         }
     }
 
@@ -133,23 +84,47 @@ public class GameServer implements Runnable, Protocol
     }
 
     @Override
-    public Response getResponse(Request request) {
+    public Response getResponse(Request request)
+    {
         String requestType = request.requestType();
         String requestData = request.requestData();
         io.writeLine(requestType + " " + requestData + "\n");
         Response response = null;
 
         try {
-            Method method = BullsCowsServiceImpl.class.getDeclaredMethod(requestType, String.class);
-            method.setAccessible(true);
-            var responseData = method.invoke(service, requestData);
-            response = new Response(ResponseCode.SUCCESS, responseData.toString());
+            Method[] methods = BullsCowsServiceImpl.class.getDeclaredMethods();
+            Method targetMethod = null;
+
+            for (Method method : methods) {
+                if (method.getName().equals(requestType)) {
+                    targetMethod = method;
+                    break;
+                }
+            }
+
+            if (targetMethod == null) {
+                throw new NoSuchMethodException(requestType);
+            }
+
+            JSONObject paramMap = new JSONObject(requestData);
+            Object[] methodParams = new Object[]{paramMap.toMap()};
+
+            targetMethod.setAccessible(true);
+            Object responseData = targetMethod.invoke(service, methodParams);
+
+            JSONObject jsonResponse = new JSONObject();
+            jsonResponse.put("responseCode", ResponseCode.SUCCESS);
+            jsonResponse.put("responseData", responseData.toString());
+
+            response = new Response(ResponseCode.SUCCESS, jsonResponse.toString());
         } catch (NoSuchMethodException e) {
             response = new Response(ResponseCode.WRONG_REQUEST, requestType + " - Wrong type for Bulls&Cows Service");
         } catch (InvocationTargetException e) {
             Throwable cause = e.getCause();
             if (cause instanceof UserNotFoundException) {
-                response = new Response(ResponseCode.WRONG_DATA, cause.getMessage()); // Note: ResponseCode.UNAUTHORIZED is 401
+                response = new Response(ResponseCode.UNAUTHORIZED, cause.getMessage());
+            } else if (cause instanceof UserAlreadyExistsException) {
+                response = new Response(ResponseCode.CONFLICT, cause.getMessage());
             } else if (cause instanceof IllegalArgumentException) {
                 response = new Response(ResponseCode.WRONG_DATA, cause.getMessage());
             } else {
@@ -157,6 +132,10 @@ public class GameServer implements Runnable, Protocol
             }
         } catch (IllegalAccessException e) {
             throw new RuntimeException(e);
+        } catch (RuntimeException e) {
+            response = new Response(ResponseCode.WRONG_REQUEST, e.getMessage());
+        } catch (Exception e) {
+            response = new Response(ResponseCode.INTERNAL_ERROR, e.getMessage());
         }
 
         return response;

@@ -1,14 +1,10 @@
 package telran.game.bulls_cows;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import jakarta.persistence.Column;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
+import jakarta.persistence.*;
 
 @Entity
-@Table(name = "gamers_to_games")
+@Table(name = "gamers_to_games",
+        uniqueConstraints = {@UniqueConstraint(columnNames = {"game_id", "gamer_name"})})
 public class GamerGame
 {
     @Id

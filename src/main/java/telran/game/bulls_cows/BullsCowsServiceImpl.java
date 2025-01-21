@@ -5,15 +5,15 @@ import telran.game.bulls_cows.common.SessionToken;
 import telran.game.bulls_cows.exceprions.GameNotFoundException;
 import telran.game.bulls_cows.exceprions.UserAlreadyExistsException;
 import telran.game.bulls_cows.exceprions.UserNotFoundException;
-import telran.net.*;
+import telran.game.bulls_cows.repository.BullsCowsRepository;
 
 import javax.naming.AuthenticationException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
+import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class BullsCowsServiceImpl implements BullsCowsService
 {
@@ -25,17 +25,21 @@ public class BullsCowsServiceImpl implements BullsCowsService
     }
 
     @Override
-    public SessionToken logIn(String gamerName) throws UserNotFoundException {
-        String param = extractInput("username", gamerName);
+    public SessionToken logIn(Map<String, Object> params) throws UserNotFoundException
+    {
+        if (!params.containsKey("username") || !(params.get("username") instanceof String)) {
+            throw new IllegalArgumentException("Missing or invalid parameter: username");
+        }
+        String gamerName = (String) params.get("username");
         try {
-            if (!repository.isUserExists(param))
-                throw new UserNotFoundException(param);
+            if (!repository.isUserExists(gamerName))
+                throw new UserNotFoundException(gamerName);
         } catch (UserNotFoundException e) {
-            throw new UserNotFoundException(param);
+            throw new UserNotFoundException(gamerName);
         } catch (RuntimeException e) {
             throw new RuntimeException(e);
         }
-        return new SessionToken(param);
+        return new SessionToken(gamerName);
     }
 
     @Override
@@ -51,22 +55,56 @@ public class BullsCowsServiceImpl implements BullsCowsService
     }
 
     /**
-     * Registers new user
+     * Registers a new user.
      *
-     * @param gamerName
-     * @param birthday
-     * @return SessionToken
-     * @throws UserAlreadyExistsException
-     * @throws IllegalArgumentException
+     * @param params A map containing the following keys:
+     *               - "username" (String): The username of the gamer.
+     *               - "birthdate" (String): The birthdate of the gamer (in any of predefined formats).
+     * @return SessionToken for the newly registered user.
+     * @throws UserAlreadyExistsException if the username already exists.
+     * @throws IllegalArgumentException if any of the parameters are missing or invalid.
      */
     @Override
-    public SessionToken signUp(String gamerName, String birthday) throws UserAlreadyExistsException, IllegalArgumentException
+    public SessionToken signUp(Map<String, Object> params) throws UserAlreadyExistsException, IllegalArgumentException
     {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
-        LocalDate birthdate = LocalDate.parse(birthday, formatter);
+        if (!params.containsKey("username") || !(params.get("username") instanceof String)) {
+            throw new IllegalArgumentException("Missing or invalid parameter: username");
+        }
+        String gamerName = (String) params.get("username");
 
+        if (!params.containsKey("birthdate") || !(params.get("birthdate") instanceof String)) {
+            throw new IllegalArgumentException("Missing or invalid parameter: birthdate");
+        }
+        String birthdateStr = (String) params.get("birthdate");
+
+        if (repository.isUserExists(gamerName)) {
+            throw new UserAlreadyExistsException(gamerName);
+        }
+
+        List<DateTimeFormatter> formatters = new ArrayList<>();
+        formatters.add(DateTimeFormatter.ofPattern("dd-MM-yyyy"));
+        formatters.add(DateTimeFormatter.ofPattern("dd.MM.yyyy"));
+        formatters.add(DateTimeFormatter.ofPattern("MM/dd/yyyy"));
+        formatters.add(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+        formatters.add(DateTimeFormatter.ofPattern("yyyy.MM.dd"));
+        formatters.add(DateTimeFormatter.ofPattern("yyyy/MM/dd"));
+        LocalDate birthdate = null;
+        for (DateTimeFormatter formatter : formatters) {
+            try {
+                birthdate = LocalDate.parse(birthdateStr, formatter);
+                break;
+            } catch (DateTimeParseException e) {}
+        }
+
+        if (birthdate == null) {
+            throw new IllegalArgumentException("Invalid date format for birthdate. Supported formats: dd-MM-yyyy, dd.MM.yyyy, yyyy-MM-dd, yyyy.MM.dd");
+        }
+
+        repository.createGamer(gamerName, birthdate);
         return new SessionToken(gamerName);
     }
+
+    public void ping() {}
 
     @Override
     public Long createGame(SessionToken gamerToken) throws AuthenticationException {
@@ -92,12 +130,15 @@ public class BullsCowsServiceImpl implements BullsCowsService
     @Override
     public boolean isGameStarted(Long game_id) throws GameNotFoundException
     {
+/*
         Game game = repository.findGameById(game_id);
         boolean result = false;
         if (game != null) {
             result = game.isStarted();
         }
         return result;
+*/
+        return repository.isGameStarted(game_id);
     }
 
     @Override

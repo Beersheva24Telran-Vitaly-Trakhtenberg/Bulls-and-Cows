@@ -5,25 +5,28 @@ import telran.game.bulls_cows.exceprions.*;
 
 import javax.naming.AuthenticationException;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Service layer for Bulls and Cows game
  */
 public interface BullsCowsService
 {
-    SessionToken logIn(String gamerName) throws UserNotFoundException;
+    SessionToken logIn(Map<String, Object> params) throws UserNotFoundException;
     void logOut(SessionToken gamerToken) throws AuthenticationException;
     void isSessionTokenValid(SessionToken gamerToken) throws AuthenticationException;
 
     /**
-     * Registers new user
-     * @param gamerName
-     * @param birthday
-     * @return SessionToken
-     * @throws UserAlreadyExistsException
-     * @throws IllegalArgumentException
+     * Registers a new user.
+     *
+     * @param params A map containing the following keys:
+     *               - "username" (String): The username of the gamer.
+     *               - "birthdate" (String): The birthdate of the gamer (in any of predefined formats).
+     * @return SessionToken for the newly registered user.
+     * @throws UserAlreadyExistsException if the username already exists.
+     * @throws IllegalArgumentException if any of the parameters are missing or invalid.
      */
-    SessionToken signUp(String gamerName, String birthday) throws UserAlreadyExistsException,IllegalArgumentException;
+    public SessionToken signUp(Map<String, Object> params) throws UserAlreadyExistsException, IllegalArgumentException;
 
     Long createGame(SessionToken gamerToken) throws AuthenticationException;
     void joinGame(SessionToken gamerToken, Long game_id) throws AuthenticationException;
