@@ -76,4 +76,9 @@ public class Game implements CsvConvertible
                 isFinished() ? finishDateTime.toString() : null
         };
     }
+
+    public void setSequence(String sequence)
+    {
+        this.sequence = sequence.trim();
+    }
 }

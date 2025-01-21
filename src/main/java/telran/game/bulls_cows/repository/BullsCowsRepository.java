@@ -28,7 +28,7 @@ public interface BullsCowsRepository
     List<Game> findAllNonStartedGames(SessionToken gamerToken);
     List<Game> findAllJoinabledGames(SessionToken gamerToken) throws UserNotFoundException;
     List<Game> findAllFinishedGames();
-    Long CreateGame(String secuence);
+    Long createGame(String secuence);
     void startGame(Long gameId,SessionToken gamerToken) throws GameNotFoundException, UserNotFoundException;
     Game findGameById(Long gameId) throws GameNotFoundException;
 }

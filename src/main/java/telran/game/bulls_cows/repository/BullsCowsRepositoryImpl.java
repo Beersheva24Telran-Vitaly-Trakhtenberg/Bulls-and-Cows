@@ -303,8 +303,26 @@ public class BullsCowsRepositoryImpl implements BullsCowsRepository
     }
 
     @Override
-    public Long CreateGame(String secuence) {
-        return 0L;
+    public Long createGame(String sequence) {
+        EntityManager em = getEntityManager();
+
+        try {
+            em.getTransaction().begin();
+
+            Game game = new Game();
+            game.setSequence(sequence);
+            em.persist(game);
+
+            em.getTransaction().commit();
+            return game.getGameID();
+        } catch (Exception e) {
+            if (em.getTransaction().isActive()) {
+                em.getTransaction().rollback();
+            }
+            throw new RuntimeException(e);
+        } finally {
+            em.close();
+        }
     }
 
     @Override

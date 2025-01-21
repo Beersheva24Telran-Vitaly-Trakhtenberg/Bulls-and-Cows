@@ -28,7 +28,7 @@ public interface BullsCowsService
      */
     public SessionToken signUp(Map<String, Object> params) throws UserAlreadyExistsException, IllegalArgumentException;
 
-    Long createGame(SessionToken gamerToken) throws AuthenticationException;
+    Long createGame(Map<String, Object> params) throws AuthenticationException;
     void joinGame(SessionToken gamerToken, Long game_id) throws AuthenticationException;
     void startGame(SessionToken gamerToken, Long game_id) throws AuthenticationException;
     void startGame(SessionToken gamerToken, Long game_id, String dateTimeStart) throws AuthenticationException;

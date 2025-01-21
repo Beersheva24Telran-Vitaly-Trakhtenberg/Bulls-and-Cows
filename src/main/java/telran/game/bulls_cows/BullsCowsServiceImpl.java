@@ -2,6 +2,7 @@ package telran.game.bulls_cows;
 
 import org.json.JSONObject;
 import telran.game.bulls_cows.common.SessionToken;
+import telran.game.bulls_cows.common.Tools;
 import telran.game.bulls_cows.exceprions.GameNotFoundException;
 import telran.game.bulls_cows.exceprions.UserAlreadyExistsException;
 import telran.game.bulls_cows.exceprions.UserNotFoundException;
@@ -107,9 +108,15 @@ public class BullsCowsServiceImpl implements BullsCowsService
     public void ping() {}
 
     @Override
-    public Long createGame(SessionToken gamerToken) throws AuthenticationException {
-        isSessionTokenValid(gamerToken);
-        return 0L;
+    public Long createGame(Map<String, Object> params) throws AuthenticationException
+    {
+        if (!params.containsKey("userSessionToken") || !(params.get("userSessionToken") instanceof String)) {   //FixMe: instanceof SessionToken
+            throw new IllegalArgumentException("Missing or invalid parameter: username");
+        }
+        String gamerToken = (String) params.get("userSessionToken");
+
+        //ToDo isSessionTokenValid(SessionToken.getToken(gamerToken));
+        return repository.createGame(Tools.generateSequence());
     }
 
     @Override
