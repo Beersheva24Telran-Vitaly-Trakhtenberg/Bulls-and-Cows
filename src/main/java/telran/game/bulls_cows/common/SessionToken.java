@@ -2,28 +2,23 @@ package telran.game.bulls_cows.common;
 
 public class SessionToken
 {
-    private String token;
-
-    public SessionToken(String user)
+    public static String getSessionToken(String gamerID)
     {
-        generateToken(user);
+        return generateToken(gamerID);
     }
 
-    public String getToken() {
-        return token;
-    }
-
-    private void generateToken(String user)
+    private static String generateToken(String user)
     {
-        this.token = user + "@" + System.currentTimeMillis();
+        return (user + "@" + System.currentTimeMillis());
     }
 
-    public String getUsername()
+    public static boolean isTokenValid(String userToken)
     {
-        return token.split("@")[0];
+        return true;    // ToDo
     }
 
-    public String toString() {
-        return token;
+    public static String getUserIdFromToken(String userToken)
+    {
+        return userToken.split("@")[0];
     }
 }

@@ -42,7 +42,7 @@ public class BullsCowsRepositoryImpl implements BullsCowsRepository
     }
 
     @Override
-    public boolean isGamerInGame(SessionToken gamerToken, Long gameId) throws UserNotFoundException, GameNotFoundException
+    public boolean isGamerInGame(String gamerID, Long gameId) throws UserNotFoundException, GameNotFoundException
     {
         if (!isGameExists(gameId)) {
             throw new GameNotFoundException(gameId);
@@ -205,14 +205,15 @@ public class BullsCowsRepositoryImpl implements BullsCowsRepository
     }
 
     @Override
-    public boolean removeGamerFromGame(SessionToken gamerToken, Long gameId) throws GameNotFoundException, UserNotFoundException {
+    public boolean removeGamerFromGame(String gamerID, Long gameId) throws GameNotFoundException, UserNotFoundException {
         // TODO Implement this method
         throw new UnsupportedOperationException("Method BullsCowsRepositoryImpl.removeGamerFromGame() not implemented yet");
     }
 
     @Override
-    public List<Game> findGamesOfGamer(SessionToken gamerToken) throws UserNotFoundException
+    public List<Game> findGamesOfGamer(String gamerID) throws UserNotFoundException
     {
+/*
         if (!isUserExists(gamerToken.toString())) {
             throw new UserNotFoundException(gamerToken.toString());
         }
@@ -225,6 +226,8 @@ public class BullsCowsRepositoryImpl implements BullsCowsRepository
             query.setParameter("gamerName", gamerToken.getUsername());
             return query.getResultList();
         }
+*/
+        return List.of();
     }
 
     @Override
@@ -240,8 +243,9 @@ public class BullsCowsRepositoryImpl implements BullsCowsRepository
     }
 
     @Override
-    public List<Game> findAllStartedGames(SessionToken gamerToken) throws UserNotFoundException
+    public List<Game> findAllStartedGames(String gamerID) throws UserNotFoundException
     {
+/*
         if (!isUserExists(gamerToken.toString())) {
             throw new UserNotFoundException(gamerToken.toString());
         }
@@ -256,11 +260,14 @@ public class BullsCowsRepositoryImpl implements BullsCowsRepository
             query.setParameter("currentDateTime", LocalDateTime.now());
             return query.getResultList();
         }
+*/
+        return List.of();
     }
 
     @Override
-    public List<Game> findAllNonStartedGames(SessionToken gamerToken)  throws UserNotFoundException
+    public List<Game> findAllNonStartedGames(String gamerID)  throws UserNotFoundException
     {
+/*
         if (!isUserExists(gamerToken.toString())) {
             throw new UserNotFoundException(gamerToken.toString());
         }
@@ -275,13 +282,15 @@ public class BullsCowsRepositoryImpl implements BullsCowsRepository
             query.setParameter("gamerName", gamerToken.getUsername());
             return query.getResultList();
         }
+*/
+        return List.of();
     }
 
     @Override
-    public List<Game> findAllJoinabledGames(SessionToken gamerToken) throws UserNotFoundException
+    public List<Game> findAllJoinabledGames(String gamerID) throws UserNotFoundException
     {
-        if (!isUserExists(gamerToken.toString())) {
-            throw new UserNotFoundException(gamerToken.toString());
+        if (!isUserExists(gamerID)) {
+            throw new UserNotFoundException(gamerID);
         }
 
         try (EntityManager em = getEntityManager()){
@@ -291,7 +300,7 @@ public class BullsCowsRepositoryImpl implements BullsCowsRepository
                             "AND g.id NOT IN (SELECT gg.gameId FROM GamerGame gg WHERE gg.gamerName != :gamerName)",
                     Game.class);
             query.setParameter("currentDateTime", LocalDateTime.now());
-            query.setParameter("gamerName", gamerToken.getUsername());
+            query.setParameter("gamerName", gamerID);
             return query.getResultList();
         }
     }
@@ -326,7 +335,7 @@ public class BullsCowsRepositoryImpl implements BullsCowsRepository
     }
 
     @Override
-    public void startGame(Long gameId, SessionToken gamerToken) throws GameNotFoundException, UserNotFoundException {
+    public void startGame(Long gameId, String gamerID) throws GameNotFoundException, UserNotFoundException {
 
     }
 

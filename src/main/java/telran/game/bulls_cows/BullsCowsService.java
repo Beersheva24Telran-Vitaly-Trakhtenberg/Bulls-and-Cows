@@ -12,9 +12,9 @@ import java.util.Map;
  */
 public interface BullsCowsService
 {
-    SessionToken logIn(Map<String, Object> params) throws UserNotFoundException;
-    void logOut(SessionToken gamerToken) throws AuthenticationException;
-    void isSessionTokenValid(SessionToken gamerToken) throws AuthenticationException;
+    String logIn(Map<String, Object> params) throws UserNotFoundException;
+    void logOut(String gamerToken) throws AuthenticationException;
+    void isSessionTokenValid(String gamerToken) throws AuthenticationException;
 
     /**
      * Registers a new user.
@@ -26,18 +26,18 @@ public interface BullsCowsService
      * @throws UserAlreadyExistsException if the username already exists.
      * @throws IllegalArgumentException if any of the parameters are missing or invalid.
      */
-    public SessionToken signUp(Map<String, Object> params) throws UserAlreadyExistsException, IllegalArgumentException;
+    public String signUp(Map<String, Object> params) throws UserAlreadyExistsException, IllegalArgumentException;
 
     Long createGame(Map<String, Object> params) throws AuthenticationException;
-    void joinGame(SessionToken gamerToken, Long game_id) throws AuthenticationException;
-    void startGame(SessionToken gamerToken, Long game_id) throws AuthenticationException;
-    void startGame(SessionToken gamerToken, Long game_id, String dateTimeStart) throws AuthenticationException;
+    void joinGame(String gamerToken, Long game_id) throws AuthenticationException;
+    void startGame(String gamerToken, Long game_id) throws AuthenticationException;
+    void startGame(String gamerToken, Long game_id, String dateTimeStart) throws AuthenticationException;
     boolean isGameStarted(Long game_id) throws GameNotFoundException;
 
-    List<Long> getAvailabledGamesForStarting(SessionToken gamerToken) throws AuthenticationException;
-    List<Long> getAvailabledGamesForJoining(SessionToken gamerToken) throws AuthenticationException;
-    List<Long> getGamerStartedGames(SessionToken gamerToken) throws AuthenticationException;
-    List<Long> getGamerFinishedGames(SessionToken gamerToken) throws AuthenticationException;
-    List<Moves> getGamerMoves(SessionToken gamerToken, Long game_id) throws GameNotFoundException, AuthenticationException;
-    List<Moves> addGamerNewMove(String sequence, SessionToken gamerToken, Long game_id) throws GameNotFoundException, AuthenticationException;
+    List<Long> getAvailabledGamesForStarting(Map<String, Object> params) throws AuthenticationException;
+    List<Long> getAvailabledGamesForJoining(Map<String, Object> params) throws AuthenticationException;
+    List<Long> getGamerStartedGames(Map<String, Object> params) throws AuthenticationException;
+    List<Long> getGamerFinishedGames(Map<String, Object> params) throws AuthenticationException;
+    List<Moves> getGamerMoves(String gamerToken, Long game_id) throws GameNotFoundException, AuthenticationException;
+    List<Moves> addGamerNewMove(String sequence, String gamerToken, Long game_id) throws GameNotFoundException, AuthenticationException;
 }

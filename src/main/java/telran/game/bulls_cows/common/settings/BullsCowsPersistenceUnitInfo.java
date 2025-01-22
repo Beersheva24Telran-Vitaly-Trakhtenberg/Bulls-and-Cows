@@ -14,10 +14,7 @@ import jakarta.persistence.spi.ClassTransformer;
 import jakarta.persistence.spi.PersistenceUnitInfo;
 import jakarta.persistence.spi.PersistenceUnitTransactionType;
 
-import telran.game.bulls_cows.Game;
-import telran.game.bulls_cows.GamerGameRecord;
-import telran.game.bulls_cows.Gamer;
-import telran.game.bulls_cows.GamerMovesRecord;
+import telran.game.bulls_cows.*;
 
 public class BullsCowsPersistenceUnitInfo implements PersistenceUnitInfo{
 
@@ -78,9 +75,8 @@ public class BullsCowsPersistenceUnitInfo implements PersistenceUnitInfo{
 
     @Override
     public List<String> getManagedClassNames() {
-        return List.of(Game.class.getName(), GamerGameRecord.class.getName(),
-                Gamer.class.getName(), GamerMovesRecord.class.getName());
-        //        return Collections.singletonList(Game.class.getName());
+        return List.of(Game.class.getName(), GamerGame.class.getName(),
+                Gamer.class.getName(), GamerMoves.class.getName());
 
     }
 

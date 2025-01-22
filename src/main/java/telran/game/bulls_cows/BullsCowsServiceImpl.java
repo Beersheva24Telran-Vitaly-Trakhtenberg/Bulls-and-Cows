@@ -26,7 +26,7 @@ public class BullsCowsServiceImpl implements BullsCowsService
     }
 
     @Override
-    public SessionToken logIn(Map<String, Object> params) throws UserNotFoundException
+    public String logIn(Map<String, Object> params) throws UserNotFoundException
     {
         if (!params.containsKey("username") || !(params.get("username") instanceof String)) {
             throw new IllegalArgumentException("Missing or invalid parameter: username");
@@ -40,17 +40,17 @@ public class BullsCowsServiceImpl implements BullsCowsService
         } catch (RuntimeException e) {
             throw new RuntimeException(e);
         }
-        return new SessionToken(gamerName);
+        return SessionToken.getSessionToken(gamerName);
     }
 
     @Override
-    public void logOut(SessionToken gamerToken) throws AuthenticationException {
+    public void logOut(String gamerToken) throws AuthenticationException {
         isSessionTokenValid(gamerToken);
     }
 
     @Override
-    public void isSessionTokenValid(SessionToken gamerToken) throws AuthenticationException {
-        if (gamerToken == null) {   // FixMe
+    public void isSessionTokenValid(String gamerToken) throws AuthenticationException {
+        if (gamerToken == null || !SessionToken.isTokenValid(gamerToken)) {
             throw new AuthenticationException("Session token is null or incorrect");
         }
     }
@@ -66,7 +66,7 @@ public class BullsCowsServiceImpl implements BullsCowsService
      * @throws IllegalArgumentException if any of the parameters are missing or invalid.
      */
     @Override
-    public SessionToken signUp(Map<String, Object> params) throws UserAlreadyExistsException, IllegalArgumentException
+    public String signUp(Map<String, Object> params) throws UserAlreadyExistsException, IllegalArgumentException
     {
         if (!params.containsKey("username") || !(params.get("username") instanceof String)) {
             throw new IllegalArgumentException("Missing or invalid parameter: username");
@@ -102,7 +102,7 @@ public class BullsCowsServiceImpl implements BullsCowsService
         }
 
         repository.createGamer(gamerName, birthdate);
-        return new SessionToken(gamerName);
+        return SessionToken.getSessionToken(gamerName);
     }
 
     public void ping() {}
@@ -110,27 +110,27 @@ public class BullsCowsServiceImpl implements BullsCowsService
     @Override
     public Long createGame(Map<String, Object> params) throws AuthenticationException
     {
-        if (!params.containsKey("userSessionToken") || !(params.get("userSessionToken") instanceof String)) {   //FixMe: instanceof SessionToken
-            throw new IllegalArgumentException("Missing or invalid parameter: username");
+        if (!params.containsKey("userSessionToken") || !(params.get("userSessionToken") instanceof String)) {
+            throw new IllegalArgumentException("Missing or invalid parameter: userSessionToken");
         }
         String gamerToken = (String) params.get("userSessionToken");
 
-        //ToDo isSessionTokenValid(SessionToken.getToken(gamerToken));
+        isSessionTokenValid(gamerToken);
         return repository.createGame(Tools.generateSequence());
     }
 
     @Override
-    public void joinGame(SessionToken gamerToken, Long game_id) throws AuthenticationException {
+    public void joinGame(String gamerToken, Long game_id) throws AuthenticationException {
         isSessionTokenValid(gamerToken);
     }
 
     @Override
-    public void startGame(SessionToken gamerToken, Long game_id) throws AuthenticationException {
+    public void startGame(String gamerToken, Long game_id) throws AuthenticationException {
         isSessionTokenValid(gamerToken);
     }
 
     @Override
-    public void startGame(SessionToken gamerToken, Long game_id, String dateTimeStart) throws AuthenticationException {
+    public void startGame(String gamerToken, Long game_id, String dateTimeStart) throws AuthenticationException {
         isSessionTokenValid(gamerToken);
     }
 
@@ -149,37 +149,42 @@ public class BullsCowsServiceImpl implements BullsCowsService
     }
 
     @Override
-    public List<Long> getAvailabledGamesForStarting(SessionToken gamerToken) throws AuthenticationException {
+    public List<Long> getAvailabledGamesForStarting(Map<String, Object> params) throws AuthenticationException {
+        //isSessionTokenValid(gamerToken);
+        return List.of();
+    }
+
+    @Override
+    public List<Long> getAvailabledGamesForJoining(Map<String, Object> params) throws AuthenticationException {
+        if (!params.containsKey("userSessionToken") || !(params.get("userSessionToken") instanceof String)) {
+            throw new IllegalArgumentException("Missing or invalid parameter: userSessionToken");
+        }
+        String gamerToken = (String) params.get("userSessionToken");
+        isSessionTokenValid(gamerToken);
+        List<Game> games = repository.findAllJoinabledGames(SessionToken.getUserIdFromToken(gamerToken));
+        return games.stream().map(Game::getGameID).toList();
+    }
+
+    @Override
+    public List<Long> getGamerStartedGames(Map<String, Object> params) throws AuthenticationException {
+        //isSessionTokenValid(gamerToken);
+        return List.of();
+    }
+
+    @Override
+    public List<Long> getGamerFinishedGames(Map<String, Object> params) throws AuthenticationException {
+        //isSessionTokenValid(gamerToken);
+        return List.of();
+    }
+
+    @Override
+    public List<Moves> getGamerMoves(String gamerToken, Long game_id) throws GameNotFoundException, AuthenticationException {
         isSessionTokenValid(gamerToken);
         return List.of();
     }
 
     @Override
-    public List<Long> getAvailabledGamesForJoining(SessionToken gamerToken) throws AuthenticationException {
-        isSessionTokenValid(gamerToken);
-        return List.of();
-    }
-
-    @Override
-    public List<Long> getGamerStartedGames(SessionToken gamerToken) throws AuthenticationException {
-        isSessionTokenValid(gamerToken);
-        return List.of();
-    }
-
-    @Override
-    public List<Long> getGamerFinishedGames(SessionToken gamerToken) throws AuthenticationException {
-        isSessionTokenValid(gamerToken);
-        return List.of();
-    }
-
-    @Override
-    public List<Moves> getGamerMoves(SessionToken gamerToken, Long game_id) throws GameNotFoundException, AuthenticationException {
-        isSessionTokenValid(gamerToken);
-        return List.of();
-    }
-
-    @Override
-    public List<Moves> addGamerNewMove(String sequence, SessionToken gamerToken, Long game_id) throws GameNotFoundException, AuthenticationException {
+    public List<Moves> addGamerNewMove(String sequence, String gamerToken, Long game_id) throws GameNotFoundException, AuthenticationException {
         isSessionTokenValid(gamerToken);
         return List.of();
     }
