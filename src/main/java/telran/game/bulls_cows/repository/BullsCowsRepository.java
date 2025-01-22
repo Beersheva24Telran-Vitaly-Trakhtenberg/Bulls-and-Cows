@@ -2,7 +2,6 @@ package telran.game.bulls_cows.repository;
 
 import telran.game.bulls_cows.Game;
 import telran.game.bulls_cows.Gamer;
-import telran.game.bulls_cows.common.SessionToken;
 import telran.game.bulls_cows.exceprions.*;
 
 import java.time.LocalDate;
@@ -26,7 +25,8 @@ public interface BullsCowsRepository
     List<Game> findAllStartedGames();
     List<Game> findAllStartedGames(String gamerID);
     List<Game> findAllNonStartedGames(String gamerID);
-    List<Game> findAllJoinabledGames(String gamerID) throws UserNotFoundException;
+    List<Game> findAllStartableGames(String userId) throws UserNotAuthorizedException;
+    List<Game> findAllJoinableGames(String gamerID) throws UserNotAuthorizedException;
     List<Game> findAllFinishedGames();
     Long createGame(String secuence);
     void startGame(Long gameId, String gamerID) throws GameNotFoundException, UserNotFoundException;

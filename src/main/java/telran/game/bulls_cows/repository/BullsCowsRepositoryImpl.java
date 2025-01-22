@@ -6,10 +6,7 @@ import telran.game.bulls_cows.Game;
 import telran.game.bulls_cows.Gamer;
 import telran.game.bulls_cows.GamerGame;
 import telran.game.bulls_cows.common.SessionToken;
-import telran.game.bulls_cows.exceprions.GameAlreadyStartedException;
-import telran.game.bulls_cows.exceprions.GameNotFoundException;
-import telran.game.bulls_cows.exceprions.UserAlreadyExistsException;
-import telran.game.bulls_cows.exceprions.UserNotFoundException;
+import telran.game.bulls_cows.exceprions.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -287,7 +284,24 @@ public class BullsCowsRepositoryImpl implements BullsCowsRepository
     }
 
     @Override
-    public List<Game> findAllJoinabledGames(String gamerID) throws UserNotFoundException
+    public List<Game> findAllStartableGames(String gamerID) throws UserNotAuthorizedException {
+        if (!isUserExists(gamerID)) {
+            throw new UserNotFoundException(gamerID);
+        }
+
+        try (EntityManager em = getEntityManager()){
+            TypedQuery<Game> query = em.createQuery(
+                    "SELECT g FROM Game g " +
+                            "WHERE (g.startDateTime IS NULL OR g.startDateTime > :currentDateTime) " +
+                            "AND EXISTS (SELECT gg.gameId FROM GamerGame gg WHERE gg.gameId = g.gameId)",
+                    Game.class);
+            query.setParameter("currentDateTime", LocalDateTime.now());
+            return query.getResultList();
+        }
+    }
+
+    @Override
+    public List<Game> findAllJoinableGames(String gamerID) throws UserNotAuthorizedException
     {
         if (!isUserExists(gamerID)) {
             throw new UserNotFoundException(gamerID);

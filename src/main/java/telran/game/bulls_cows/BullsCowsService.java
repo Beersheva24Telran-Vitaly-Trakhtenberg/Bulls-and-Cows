@@ -1,6 +1,5 @@
 package telran.game.bulls_cows;
 
-import telran.game.bulls_cows.common.SessionToken;
 import telran.game.bulls_cows.exceprions.*;
 
 import javax.naming.AuthenticationException;
@@ -34,8 +33,8 @@ public interface BullsCowsService
     void startGame(String gamerToken, Long game_id, String dateTimeStart) throws AuthenticationException;
     boolean isGameStarted(Long game_id) throws GameNotFoundException;
 
-    List<Long> getAvailabledGamesForStarting(Map<String, Object> params) throws AuthenticationException;
-    List<Long> getAvailabledGamesForJoining(Map<String, Object> params) throws AuthenticationException;
+    List<Long> getAvailableGamesForStarting(Map<String, Object> params) throws AuthenticationException;
+    List<Long> getAvailableGamesForJoining(Map<String, Object> params) throws AuthenticationException;
     List<Long> getGamerStartedGames(Map<String, Object> params) throws AuthenticationException;
     List<Long> getGamerFinishedGames(Map<String, Object> params) throws AuthenticationException;
     List<Moves> getGamerMoves(String gamerToken, Long game_id) throws GameNotFoundException, AuthenticationException;

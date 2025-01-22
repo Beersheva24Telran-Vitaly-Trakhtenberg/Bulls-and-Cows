@@ -5,6 +5,7 @@ import telran.game.bulls_cows.common.SessionToken;
 import telran.game.bulls_cows.common.Tools;
 import telran.game.bulls_cows.exceprions.GameNotFoundException;
 import telran.game.bulls_cows.exceprions.UserAlreadyExistsException;
+import telran.game.bulls_cows.exceprions.UserNotAuthorizedException;
 import telran.game.bulls_cows.exceprions.UserNotFoundException;
 import telran.game.bulls_cows.repository.BullsCowsRepository;
 
@@ -49,9 +50,9 @@ public class BullsCowsServiceImpl implements BullsCowsService
     }
 
     @Override
-    public void isSessionTokenValid(String gamerToken) throws AuthenticationException {
+    public void isSessionTokenValid(String gamerToken) throws UserNotAuthorizedException {
         if (gamerToken == null || !SessionToken.isTokenValid(gamerToken)) {
-            throw new AuthenticationException("Session token is null or incorrect");
+            throw new UserNotAuthorizedException();
         }
     }
 
@@ -110,9 +111,7 @@ public class BullsCowsServiceImpl implements BullsCowsService
     @Override
     public Long createGame(Map<String, Object> params) throws AuthenticationException
     {
-        if (!params.containsKey("userSessionToken") || !(params.get("userSessionToken") instanceof String)) {
-            throw new IllegalArgumentException("Missing or invalid parameter: userSessionToken");
-        }
+        checksIsTokenPresented(params);
         String gamerToken = (String) params.get("userSessionToken");
 
         isSessionTokenValid(gamerToken);
@@ -149,19 +148,22 @@ public class BullsCowsServiceImpl implements BullsCowsService
     }
 
     @Override
-    public List<Long> getAvailabledGamesForStarting(Map<String, Object> params) throws AuthenticationException {
-        //isSessionTokenValid(gamerToken);
-        return List.of();
+    public List<Long> getAvailableGamesForStarting(Map<String, Object> params) throws UserNotAuthorizedException
+    {
+        checksIsTokenPresented(params);
+        String gamerToken = (String) params.get("userSessionToken");
+        isSessionTokenValid(gamerToken);
+        List<Game> games = repository.findAllStartableGames(SessionToken.getUserIdFromToken(gamerToken));
+        return games.stream().map(Game::getGameID).toList();
     }
 
     @Override
-    public List<Long> getAvailabledGamesForJoining(Map<String, Object> params) throws AuthenticationException {
-        if (!params.containsKey("userSessionToken") || !(params.get("userSessionToken") instanceof String)) {
-            throw new IllegalArgumentException("Missing or invalid parameter: userSessionToken");
-        }
+    public List<Long> getAvailableGamesForJoining(Map<String, Object> params) throws UserNotAuthorizedException
+    {
+        checksIsTokenPresented(params);
         String gamerToken = (String) params.get("userSessionToken");
         isSessionTokenValid(gamerToken);
-        List<Game> games = repository.findAllJoinabledGames(SessionToken.getUserIdFromToken(gamerToken));
+        List<Game> games = repository.findAllJoinableGames(SessionToken.getUserIdFromToken(gamerToken));
         return games.stream().map(Game::getGameID).toList();
     }
 
@@ -216,6 +218,13 @@ public class BullsCowsServiceImpl implements BullsCowsService
             }
         } catch (Exception e) {
             throw new IllegalArgumentException("Invalid JSON format", e);
+        }
+    }
+
+    private void checksIsTokenPresented(Map<String, Object> params)
+    {
+        if (!params.containsKey("userSessionToken") || !(params.get("userSessionToken") instanceof String)) {
+            throw new IllegalArgumentException("Missing or invalid parameter: userSessionToken");
         }
     }
 }
