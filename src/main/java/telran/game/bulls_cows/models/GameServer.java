@@ -1,4 +1,4 @@
-package telran.game.bulls_cows;
+package telran.game.bulls_cows.models;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
@@ -6,9 +6,10 @@ import org.hibernate.jpa.HibernatePersistenceProvider;
 import org.json.JSONObject;
 import telran.game.bulls_cows.common.settings.BullsCowsPersistenceUnitInfo;
 import telran.game.bulls_cows.common.SessionToken;
-import telran.game.bulls_cows.exceprions.*;
+import telran.game.bulls_cows.exceptions.*;
 import telran.game.bulls_cows.repository.BullsCowsRepository;
 import telran.game.bulls_cows.repository.BullsCowsRepositoryImpl;
+import telran.game.bulls_cows.service.BullsCowsServiceImpl;
 import telran.net.*;
 import telran.view.InputOutput;
 import telran.view.StandardInputOutput;

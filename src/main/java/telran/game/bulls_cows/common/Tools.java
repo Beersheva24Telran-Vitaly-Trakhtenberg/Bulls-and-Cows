@@ -3,6 +3,12 @@ package telran.game.bulls_cows.common;
 import telran.game.bulls_cows.common.settings.Settings;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.random.RandomGenerator;
@@ -74,5 +80,27 @@ public class Tools
                 .nextLong(start_epoch_day, end_epoch_day);
 
         return LocalDate.ofEpochDay(random_day);
+    }
+
+    private static final List<DateTimeFormatter> DATE_TIME_FORMATTERS = Arrays.asList(
+            DateTimeFormatter.ofPattern("HH:mm"),
+            DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")
+    );
+
+    public static LocalDateTime parse(String dateTimeString)
+    {
+        for (DateTimeFormatter formatter : DATE_TIME_FORMATTERS) {
+            try {
+                if (dateTimeString.length() == 5) { // HH:mm
+                    LocalTime localTime = LocalTime.parse(dateTimeString, formatter);
+                    return LocalDateTime.of(LocalDateTime.now().toLocalDate(), localTime);
+                } else {
+                    return LocalDateTime.parse(dateTimeString, formatter);
+                }
+            } catch (DateTimeParseException e) {
+
+            }
+        }
+        throw new IllegalArgumentException("Invalid date/time format: " + dateTimeString);
     }
 }

@@ -1,4 +1,4 @@
-package telran.game.bulls_cows.exceprions;
+package telran.game.bulls_cows.exceptions;
 
 import java.util.NoSuchElementException;
 

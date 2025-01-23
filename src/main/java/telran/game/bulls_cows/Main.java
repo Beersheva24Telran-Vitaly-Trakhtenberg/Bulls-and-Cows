@@ -3,6 +3,10 @@ package telran.game.bulls_cows;
 import com.opencsv.CSVWriter;
 import telran.game.bulls_cows.common.*;
 import telran.game.bulls_cows.common.settings.Settings;
+import telran.game.bulls_cows.models.Game;
+import telran.game.bulls_cows.models.Gamer;
+import telran.game.bulls_cows.models.GamerGameRecord;
+import telran.game.bulls_cows.models.GamerMovesRecord;
 
 import java.io.FileWriter;
 import java.io.IOException;

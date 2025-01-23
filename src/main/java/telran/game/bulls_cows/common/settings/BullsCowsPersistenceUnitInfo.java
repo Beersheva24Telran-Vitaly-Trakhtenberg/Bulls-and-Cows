@@ -14,7 +14,10 @@ import jakarta.persistence.spi.ClassTransformer;
 import jakarta.persistence.spi.PersistenceUnitInfo;
 import jakarta.persistence.spi.PersistenceUnitTransactionType;
 
-import telran.game.bulls_cows.*;
+import telran.game.bulls_cows.models.Game;
+import telran.game.bulls_cows.models.Gamer;
+import telran.game.bulls_cows.models.GamerGame;
+import telran.game.bulls_cows.models.GamerMoves;
 
 public class BullsCowsPersistenceUnitInfo implements PersistenceUnitInfo{
 

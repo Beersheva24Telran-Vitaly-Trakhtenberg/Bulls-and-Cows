@@ -1,4 +1,4 @@
-package telran.game.bulls_cows;
+package telran.game.bulls_cows.models;
 
 import jakarta.persistence.*;
 
@@ -80,5 +80,10 @@ public class Game implements CsvConvertible
     public void setSequence(String sequence)
     {
         this.sequence = sequence.trim();
+    }
+
+    public void setStartDateTime(LocalDateTime startDateTime)
+    {
+        this.startDateTime = startDateTime;
     }
 }

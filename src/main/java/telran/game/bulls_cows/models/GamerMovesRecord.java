@@ -1,4 +1,4 @@
-package telran.game.bulls_cows;
+package telran.game.bulls_cows.models;
 
 public record GamerMovesRecord(
         int move_id,

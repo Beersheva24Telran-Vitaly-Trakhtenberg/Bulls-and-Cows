@@ -1,16 +1,16 @@
-package telran.game.bulls_cows;
+package telran.game.bulls_cows.service;
 
 import org.json.JSONObject;
+import telran.game.bulls_cows.models.Game;
+import telran.game.bulls_cows.Moves;
 import telran.game.bulls_cows.common.SessionToken;
 import telran.game.bulls_cows.common.Tools;
-import telran.game.bulls_cows.exceprions.GameNotFoundException;
-import telran.game.bulls_cows.exceprions.UserAlreadyExistsException;
-import telran.game.bulls_cows.exceprions.UserNotAuthorizedException;
-import telran.game.bulls_cows.exceprions.UserNotFoundException;
+import telran.game.bulls_cows.exceptions.*;
 import telran.game.bulls_cows.repository.BullsCowsRepository;
 
 import javax.naming.AuthenticationException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
@@ -29,10 +29,9 @@ public class BullsCowsServiceImpl implements BullsCowsService
     @Override
     public String logIn(Map<String, Object> params) throws UserNotFoundException
     {
-        if (!params.containsKey("username") || !(params.get("username") instanceof String)) {
+        if (!params.containsKey("username") || !(params.get("username") instanceof String gamerName)) {
             throw new IllegalArgumentException("Missing or invalid parameter: username");
         }
-        String gamerName = (String) params.get("username");
         try {
             if (!repository.isUserExists(gamerName))
                 throw new UserNotFoundException(gamerName);
@@ -45,14 +44,14 @@ public class BullsCowsServiceImpl implements BullsCowsService
     }
 
     @Override
-    public void logOut(String gamerToken) throws AuthenticationException {
+    public void logOut(String gamerToken) throws UserNotAuthorizedException {
         isSessionTokenValid(gamerToken);
     }
 
     @Override
     public void isSessionTokenValid(String gamerToken) throws UserNotAuthorizedException {
         if (gamerToken == null || !SessionToken.isTokenValid(gamerToken)) {
-            throw new UserNotAuthorizedException();
+            throw new UserNotAuthorizedException(SessionToken.getUserIdFromToken(gamerToken));
         }
     }
 
@@ -69,15 +68,13 @@ public class BullsCowsServiceImpl implements BullsCowsService
     @Override
     public String signUp(Map<String, Object> params) throws UserAlreadyExistsException, IllegalArgumentException
     {
-        if (!params.containsKey("username") || !(params.get("username") instanceof String)) {
+        if (!params.containsKey("username") || !(params.get("username") instanceof String gamerName)) {
             throw new IllegalArgumentException("Missing or invalid parameter: username");
         }
-        String gamerName = (String) params.get("username");
 
-        if (!params.containsKey("birthdate") || !(params.get("birthdate") instanceof String)) {
+        if (!params.containsKey("birthdate") || !(params.get("birthdate") instanceof String birthdateStr)) {
             throw new IllegalArgumentException("Missing or invalid parameter: birthdate");
         }
-        String birthdateStr = (String) params.get("birthdate");
 
         if (repository.isUserExists(gamerName)) {
             throw new UserAlreadyExistsException(gamerName);
@@ -109,7 +106,7 @@ public class BullsCowsServiceImpl implements BullsCowsService
     public void ping() {}
 
     @Override
-    public Long createGame(Map<String, Object> params) throws AuthenticationException
+    public Long createGame(Map<String, Object> params) throws UserNotAuthorizedException
     {
         checksIsTokenPresented(params);
         String gamerToken = (String) params.get("userSessionToken");
@@ -119,19 +116,76 @@ public class BullsCowsServiceImpl implements BullsCowsService
     }
 
     @Override
-    public void joinGame(String gamerToken, Long game_id) throws AuthenticationException {
+    public Long joinGame(Map<String, Object> params) throws
+            GameAlreadyStartedException,
+            UserNotFoundException,
+            UserNotAuthorizedException
+    {
+        checksIsTokenPresented(params);
+        String gamerToken = (String) params.get("userSessionToken");
+
         isSessionTokenValid(gamerToken);
+        Long gameId = null;
+        String gamerId = "";
+        try {
+            if (!params.containsKey("gameId") || !(params.get("gameId") instanceof String)) {
+                throw new IllegalArgumentException("Missing or invalid parameter: 'gameId'");
+            }
+            gameId = Long.valueOf(params.get("gameId").toString());
+            gamerId = SessionToken.getUserIdFromToken(gamerToken);
+            List<String> gamers = new ArrayList<String>();
+            gamers.add(gamerId);
+            repository.addGamersToGame(gameId, gamers);
+
+            return gameId;
+        } catch (GameNotFoundException e) {
+            throw new GameNotFoundException(gameId);
+        } catch (GameAlreadyStartedException e) {
+            throw new GameAlreadyStartedException(gameId);
+        } catch (UserNotFoundException e) {
+            throw new UserNotFoundException(gamerId);
+        }
     }
 
     @Override
-    public void startGame(String gamerToken, Long game_id) throws AuthenticationException {
+    public Long startGame(Map<String, Object> params) throws UserNotAuthorizedException, GameAlreadyStartedException
+    {
+        checksIsTokenPresented(params);
+        String gamerToken = (String) params.get("userSessionToken");
+
         isSessionTokenValid(gamerToken);
+        Long gameId = null;
+        try {
+            if (!params.containsKey("gameId") || !(params.get("gameId") instanceof String)) {
+                throw new IllegalArgumentException("Missing or invalid parameter: 'gameId'");
+            }
+            gameId = Long.valueOf(params.get("gameId").toString());
+            LocalDateTime startDateTime = null;
+            if (
+                !params.containsKey("startDateTime") ||
+                !(params.get("startDateTime") instanceof String) ||
+                ((String) params.get("startDateTime")).isEmpty())
+            {} else {
+                startDateTime = params.get("startDateTime") instanceof String ? Tools.parse(params.get("startDateTime").toString()) : null;
+            }
+            repository.startGame(gameId, startDateTime);
+
+            return gameId;
+        } catch (GameNotFoundException e) {
+            throw new GameNotFoundException(gameId);
+        } catch (GameAlreadyStartedException a) {
+            throw new GameAlreadyStartedException(gameId);
+        } catch (DateTimeParseException e) {
+            throw new IllegalArgumentException("Invalid date format for startDateTime. Supported formats: dd-MM-yyyy HH:mm or HH:mm");
+        }
     }
 
+/*
     @Override
     public void startGame(String gamerToken, Long game_id, String dateTimeStart) throws AuthenticationException {
         isSessionTokenValid(gamerToken);
     }
+*/
 
     @Override
     public boolean isGameStarted(Long game_id) throws GameNotFoundException
@@ -148,7 +202,12 @@ public class BullsCowsServiceImpl implements BullsCowsService
     }
 
     @Override
-    public List<Long> getAvailableGamesForStarting(Map<String, Object> params) throws UserNotAuthorizedException
+    public List<Long> getAvailableGamesForStarting(
+            Map<String,
+            Object> params
+        ) throws
+            UserNotFoundException,
+            UserNotAuthorizedException
     {
         checksIsTokenPresented(params);
         String gamerToken = (String) params.get("userSessionToken");
@@ -158,7 +217,12 @@ public class BullsCowsServiceImpl implements BullsCowsService
     }
 
     @Override
-    public List<Long> getAvailableGamesForJoining(Map<String, Object> params) throws UserNotAuthorizedException
+    public List<Long> getAvailableGamesForJoining(
+            Map<String,
+            Object> params
+        ) throws
+            UserNotFoundException,
+            UserNotAuthorizedException
     {
         checksIsTokenPresented(params);
         String gamerToken = (String) params.get("userSessionToken");
@@ -168,25 +232,39 @@ public class BullsCowsServiceImpl implements BullsCowsService
     }
 
     @Override
-    public List<Long> getGamerStartedGames(Map<String, Object> params) throws AuthenticationException {
+    public List<Long> getGamerGamingGames(Map<String, Object> params) throws AuthenticationException {
         //isSessionTokenValid(gamerToken);
         return List.of();
     }
 
     @Override
-    public List<Long> getGamerFinishedGames(Map<String, Object> params) throws AuthenticationException {
+    public List<Long> getGamerFinishedGames(Map<String, Object> params)
+    {
         //isSessionTokenValid(gamerToken);
         return List.of();
     }
 
     @Override
-    public List<Moves> getGamerMoves(String gamerToken, Long game_id) throws GameNotFoundException, AuthenticationException {
+    public List<Moves> getGamerMoves(
+            String gamerToken,
+            Long game_id
+        ) throws
+            GameNotFoundException,
+            UserNotAuthorizedException
+    {
         isSessionTokenValid(gamerToken);
         return List.of();
     }
 
     @Override
-    public List<Moves> addGamerNewMove(String sequence, String gamerToken, Long game_id) throws GameNotFoundException, AuthenticationException {
+    public List<Moves> addGamerNewMove(
+            String sequence,
+            String gamerToken,
+            Long game_id
+        ) throws
+            GameNotFoundException,
+            UserNotAuthorizedException
+    {
         isSessionTokenValid(gamerToken);
         return List.of();
     }

@@ -1,4 +1,4 @@
-package telran.game.bulls_cows;
+package telran.game.bulls_cows.models;
 
 public record GamerGameRecord(
         int gamer4game_id,

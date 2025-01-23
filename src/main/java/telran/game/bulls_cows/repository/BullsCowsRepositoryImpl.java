@@ -2,14 +2,15 @@ package telran.game.bulls_cows.repository;
 
 import jakarta.persistence.*;
 
-import telran.game.bulls_cows.Game;
-import telran.game.bulls_cows.Gamer;
-import telran.game.bulls_cows.GamerGame;
-import telran.game.bulls_cows.common.SessionToken;
-import telran.game.bulls_cows.exceprions.*;
+import telran.game.bulls_cows.models.Game;
+import telran.game.bulls_cows.models.Gamer;
+import telran.game.bulls_cows.models.GamerGame;
+import telran.game.bulls_cows.exceptions.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.List;
 
 public class BullsCowsRepositoryImpl implements BullsCowsRepository
@@ -159,7 +160,7 @@ public class BullsCowsRepositoryImpl implements BullsCowsRepository
     }
 
     @Override
-    public List<Gamer> addGamersToGame(Long gameId, List<Gamer> gamers)
+    public List<Gamer> addGamersToGame(Long gameId, List<String> gamersIDs)
             throws GameNotFoundException,
             UserNotFoundException,
             GameAlreadyStartedException
@@ -175,12 +176,12 @@ public class BullsCowsRepositoryImpl implements BullsCowsRepository
         try {
             em.getTransaction().begin();
 
-            for (Gamer gamer : gamers) {
-                if (!isUserExists(gamer.getGamerName())) {
-                    throw new UserNotFoundException(gamer.getGamerName());
+            for (String gamerId : gamersIDs) {
+                if (!isUserExists(gamerId)) {
+                    throw new UserNotFoundException(gamerId);
                 }
 
-                GamerGame gamerGame = new GamerGame(gamer.getGamerName(), gameId);
+                GamerGame gamerGame = new GamerGame(gamerId, gameId);
                 em.persist(gamerGame);
             }
 
@@ -240,7 +241,7 @@ public class BullsCowsRepositoryImpl implements BullsCowsRepository
     }
 
     @Override
-    public List<Game> findAllStartedGames(String gamerID) throws UserNotFoundException
+    public List<Game> findAllStartedGames(String gamerID) //throws UserNotFoundException
     {
 /*
         if (!isUserExists(gamerToken.toString())) {
@@ -262,7 +263,7 @@ public class BullsCowsRepositoryImpl implements BullsCowsRepository
     }
 
     @Override
-    public List<Game> findAllNonStartedGames(String gamerID)  throws UserNotFoundException
+    public List<Game> findAllNonStartedGames(String gamerID)  //throws UserNotFoundException
     {
 /*
         if (!isUserExists(gamerToken.toString())) {
@@ -284,7 +285,7 @@ public class BullsCowsRepositoryImpl implements BullsCowsRepository
     }
 
     @Override
-    public List<Game> findAllStartableGames(String gamerID) throws UserNotAuthorizedException {
+    public List<Game> findAllStartableGames(String gamerID) throws UserNotAuthorizedException, UserNotFoundException {
         if (!isUserExists(gamerID)) {
             throw new UserNotFoundException(gamerID);
         }
@@ -301,8 +302,7 @@ public class BullsCowsRepositoryImpl implements BullsCowsRepository
     }
 
     @Override
-    public List<Game> findAllJoinableGames(String gamerID) throws UserNotAuthorizedException
-    {
+    public List<Game> findAllJoinableGames(String gamerID) throws UserNotAuthorizedException, UserNotFoundException {
         if (!isUserExists(gamerID)) {
             throw new UserNotFoundException(gamerID);
         }
@@ -311,7 +311,7 @@ public class BullsCowsRepositoryImpl implements BullsCowsRepository
             TypedQuery<Game> query = em.createQuery(
                     "SELECT g FROM Game g " +
                             "WHERE (g.startDateTime IS NULL OR g.startDateTime > :currentDateTime) " +
-                            "AND g.id NOT IN (SELECT gg.gameId FROM GamerGame gg WHERE gg.gamerName != :gamerName)",
+                            "AND g.id NOT IN (SELECT gg.gameId FROM GamerGame gg WHERE gg.gamerName = :gamerName)",
                     Game.class);
             query.setParameter("currentDateTime", LocalDateTime.now());
             query.setParameter("gamerName", gamerID);
@@ -349,8 +349,33 @@ public class BullsCowsRepositoryImpl implements BullsCowsRepository
     }
 
     @Override
-    public void startGame(Long gameId, String gamerID) throws GameNotFoundException, UserNotFoundException {
+    public void startGame(Long gameId, LocalDateTime startDateTime) throws GameNotFoundException, GameAlreadyStartedException
+    {
+        EntityManager em = getEntityManager();
 
+        try {
+            em.getTransaction().begin();
+
+            Game game = em.find(Game.class, gameId);
+            if (game == null) {
+                throw new GameNotFoundException(gameId);
+            }
+
+            if (startDateTime == null) {
+                ZoneId zoneId = ZoneId.systemDefault();
+                startDateTime = ZonedDateTime.now(zoneId).toLocalDateTime();
+            }
+
+            game.setStartDateTime(startDateTime);
+            em.getTransaction().commit();
+        } catch (Exception e) {
+            if (em.getTransaction().isActive()) {
+                em.getTransaction().rollback();
+            }
+            throw new RuntimeException(e);
+        } finally {
+            em.close();
+        }
     }
 
     @Override
