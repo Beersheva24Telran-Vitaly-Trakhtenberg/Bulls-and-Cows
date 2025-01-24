@@ -2,16 +2,15 @@ package telran.game.bulls_cows.repository;
 
 import jakarta.persistence.*;
 
-import telran.game.bulls_cows.models.Game;
-import telran.game.bulls_cows.models.Gamer;
-import telran.game.bulls_cows.models.GamerGame;
+import telran.game.bulls_cows.dto.GamerMovesDTO;
+import telran.game.bulls_cows.models.*;
 import telran.game.bulls_cows.exceptions.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.List;
+import java.util.*;
 
 public class BullsCowsRepositoryImpl implements BullsCowsRepository
 {
@@ -40,16 +39,33 @@ public class BullsCowsRepositoryImpl implements BullsCowsRepository
     }
 
     @Override
-    public boolean isGamerInGame(String gamerID, Long gameId) throws UserNotFoundException, GameNotFoundException
+    public boolean isGamerInGame(String gamerId, Long gameId) throws UserNotFoundException, GameNotFoundException
     {
         if (!isGameExists(gameId)) {
             throw new GameNotFoundException(gameId);
+        }
+        if (!isGamerExists(gamerId)) {
+            throw new UserNotFoundException(gamerId);
         }
 
         try (EntityManager em = getEntityManager()) {
             TypedQuery<Long> query = em.createQuery(
                     "SELECT COUNT(g) FROM GamerGame g WHERE g.gamerName = :gamerName AND g.gameId = :gameId",
                     Long.class);
+            query.setParameter("gamerName", gamerId);
+            query.setParameter("gameId", gameId);
+            long count = query.getSingleResult();
+            return count > 0;
+        }
+    }
+
+    @Override
+    public boolean isGamerExists(String gamerID)
+    {
+        try (EntityManager em = getEntityManager()) {
+            TypedQuery<Long> query = em.createQuery(
+                    "SELECT COUNT(g) FROM Gamer g WHERE g.id = :gamerId", Long.class);
+            query.setParameter("gamerId", gamerID);
             long count = query.getSingleResult();
             return count > 0;
         }
@@ -211,21 +227,18 @@ public class BullsCowsRepositoryImpl implements BullsCowsRepository
     @Override
     public List<Game> findGamesOfGamer(String gamerID) throws UserNotFoundException
     {
-/*
-        if (!isUserExists(gamerToken.toString())) {
-            throw new UserNotFoundException(gamerToken.toString());
+        if (!isUserExists(gamerID)) {
+            throw new UserNotFoundException(gamerID);
         }
 
         try (EntityManager em = getEntityManager()) {
             TypedQuery<Game> query = em.createQuery(
                     "SELECT g FROM Game g JOIN GamerGame gg ON g.gameId = gg.gameId " +
-                            "WHERE gg.gamerName = :gamerName",
+                            "WHERE gg.gamerName = :gamerName AND g.finishDateTime IS NULL",
                     Game.class);
-            query.setParameter("gamerName", gamerToken.getUsername());
+            query.setParameter("gamerName", gamerID);
             return query.getResultList();
         }
-*/
-        return List.of();
     }
 
     @Override
@@ -330,12 +343,12 @@ public class BullsCowsRepositoryImpl implements BullsCowsRepository
         EntityManager em = getEntityManager();
 
         try {
-            em.getTransaction().begin();
-
             Game game = new Game();
-            game.setSequence(sequence);
-            em.persist(game);
-
+            em.getTransaction().begin();
+            {
+                game.setSequence(sequence);
+                em.persist(game);
+            }
             em.getTransaction().commit();
             return game.getGameID();
         } catch (Exception e) {
@@ -354,8 +367,6 @@ public class BullsCowsRepositoryImpl implements BullsCowsRepository
         EntityManager em = getEntityManager();
 
         try {
-            em.getTransaction().begin();
-
             Game game = em.find(Game.class, gameId);
             if (game == null) {
                 throw new GameNotFoundException(gameId);
@@ -366,7 +377,10 @@ public class BullsCowsRepositoryImpl implements BullsCowsRepository
                 startDateTime = ZonedDateTime.now(zoneId).toLocalDateTime();
             }
 
-            game.setStartDateTime(startDateTime);
+            em.getTransaction().begin();
+            {
+                game.setStartDateTime(startDateTime);
+            }
             em.getTransaction().commit();
         } catch (Exception e) {
             if (em.getTransaction().isActive()) {
@@ -383,6 +397,134 @@ public class BullsCowsRepositoryImpl implements BullsCowsRepository
     {
         try (EntityManager em = getEntityManager()) {
             return em.find(Game.class, gameId);
+        }
+    }
+
+    @Override
+    public void addMovieToGame(
+            Long gameId,
+            String userId,
+            Object movie
+        ) throws
+            UserNotFoundException,
+            GameNotFoundException,
+            GameNotStartedException
+    {
+        EntityManager em = getEntityManager();
+
+        if (!isGamerInGame(userId, gameId)) {
+            throw new UserNotFoundException(userId);
+        }
+        if (!isGameStarted(gameId)) {
+            throw new GameNotStartedException(gameId);
+        }
+
+        TypedQuery<Long> query = em.createQuery(
+                "SELECT g.id FROM GamerGame g WHERE g.gamerName = :gamerName AND g.gameId = :gameId",
+                Long.class);
+        query.setParameter("gamerName", userId);
+        query.setParameter("gameId", gameId);
+
+        try {
+            em.getTransaction().begin();
+            Long gamerGameId = query.getSingleResult();
+            {
+                GamerMoves gamerMovies = null;
+                if (movie instanceof String) {
+                    gamerMovies = new GamerMoves(gamerGameId, (String) movie);
+                } else if (movie instanceof HashMap) {
+                    String sequence = ((HashMap<?, ?>) movie).get("sequence").toString();
+                    String bulls = ((HashMap<?, ?>) movie).get("numberBulls").toString();
+                    String cows = ((HashMap<?, ?>) movie).get("numberCows").toString();
+                    Integer numberBulls = Integer.parseInt(bulls);
+                    int numberCows = Integer.parseInt(cows);
+                    gamerMovies = new GamerMoves(
+                            gamerGameId,
+                            ((HashMap<?, ?>) movie).get("sequence").toString(),
+                            Integer.parseInt(((HashMap<?, ?>) movie).get("numberBulls").toString()),
+                            Integer.parseInt(((HashMap<?, ?>) movie).get("numberCows").toString())
+                    );
+                } else {
+                    throw new IllegalArgumentException("Invalid movie type");
+                }
+                em.persist(gamerMovies);
+            }
+            em.getTransaction().commit();
+        } catch (Exception e) {
+            if (em.getTransaction().isActive()) {
+                em.getTransaction().rollback();
+            }
+            throw new RuntimeException(e);
+        } finally {
+            em.close();
+        }
+
+    }
+
+    @Override
+    public List<Map<String, String>> getGamerMoves(Long gameId, String userId)
+    {
+        EntityManager em = getEntityManager();
+        TypedQuery<Long> query = em.createQuery(
+                "SELECT id FROM GamerGame g WHERE g.gamerName = :gamerName AND g.gameId = :gameId",
+                Long.class);
+        query.setParameter("gamerName", userId);
+        query.setParameter("gameId", gameId);
+        List<Map<String, String>> result = new ArrayList<>();
+        try {
+            Long gamerGameId = query.getSingleResult();
+            TypedQuery<GamerMovesDTO> queryMoves = em.createQuery(
+                    "SELECT new telran.game.bulls_cows.dto.GamerMovesDTO(g.sequence, g.resultBulls, g.resultCows) FROM GamerMoves g WHERE g.keyGamerGameId = :gamerGameId",
+                    GamerMovesDTO.class);
+            queryMoves.setParameter("gamerGameId", gamerGameId);
+
+            List<GamerMovesDTO> gamerMovesDTOList = queryMoves.getResultList();
+
+            for (GamerMovesDTO gamerMove : gamerMovesDTOList) {
+                if (gamerMove != null) {
+                    Map<String, String> entity = new HashMap<>();
+                    entity.put("sequence", gamerMove.getSequence());
+                    entity.put("numberBulls", String.valueOf(gamerMove.getResultBulls()));
+                    entity.put("numberCows", String.valueOf(gamerMove.getResultCows()));
+                    result.add(entity);
+                }
+            }
+        } catch (NoResultException e) {
+        }
+
+        return result;
+    }
+
+    @Override
+    public void finishGame(Long gameId, String userId) throws GameNotFoundException, GameNotStartedException
+    {
+        EntityManager em = getEntityManager();
+
+        TypedQuery<Long> query = em.createQuery(
+                "SELECT id FROM GamerGame g WHERE g.gamerName = :gamerName AND g.gameId = :gameId",
+                Long.class);
+        query.setParameter("gamerName", userId);
+        query.setParameter("gameId", gameId);
+
+        try {
+            Long gamerGameId = query.getSingleResult();
+            ZoneId zoneId = ZoneId.systemDefault();
+            em.getTransaction().begin();
+            {
+                GamerGame gamerGame = em.find(GamerGame.class, gamerGameId);
+                gamerGame.setWinner();
+
+                Game game = em.find(Game.class, gameId);
+                game.setFinishDateTime(ZonedDateTime.now(zoneId).toLocalDateTime());
+            }
+            em.getTransaction().commit();
+        } catch (Exception e) {
+            if (em.getTransaction().isActive()) {
+                em.getTransaction().rollback();
+            }
+            throw new RuntimeException(e);
+        } finally {
+            em.close();
         }
     }
 }

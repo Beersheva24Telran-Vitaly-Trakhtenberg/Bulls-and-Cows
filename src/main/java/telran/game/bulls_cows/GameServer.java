@@ -1,4 +1,4 @@
-package telran.game.bulls_cows.models;
+package telran.game.bulls_cows;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
@@ -122,15 +122,26 @@ public class GameServer implements Runnable, Protocol
             response = new Response(ResponseCode.WRONG_REQUEST, requestType + " - Wrong type for Bulls&Cows Service");
         } catch (InvocationTargetException e) {
             Throwable cause = e.getCause();
+            ResponseCode code;
             if (cause instanceof UserNotFoundException) {
-                response = new Response(ResponseCode.UNAUTHORIZED, cause.getMessage());
+                code = ResponseCode.UNAUTHORIZED;
             } else if (cause instanceof UserAlreadyExistsException) {
-                response = new Response(ResponseCode.CONFLICT, cause.getMessage());
+                code = ResponseCode.CONFLICT;
             } else if (cause instanceof IllegalArgumentException) {
-                response = new Response(ResponseCode.WRONG_DATA, cause.getMessage());
-            } else {
-                response = new Response(ResponseCode.WRONG_DATA, e.getMessage());
+                code = ResponseCode.WRONG_DATA;
+            } else if (cause instanceof GameNotFoundException) {
+                code = ResponseCode.WRONG_DATA;
+            } else if (cause instanceof GameNotStartedException) {
+                code = ResponseCode.WRONG_DATA;
+            } else if (cause instanceof GameAlreadyStartedException) {
+                code = ResponseCode.WRONG_DATA;
+            } else if (cause instanceof GameAlreadyFinishedException) {
+                code = ResponseCode.WRONG_DATA;
             }
+            else {
+                code = ResponseCode.INTERNAL_ERROR;
+            }
+            response = createErrorResponse(code, cause.getClass().getSimpleName(), cause.getMessage());
         } catch (IllegalAccessException e) {
             throw new RuntimeException(e);
         } catch (RuntimeException e) {
@@ -145,5 +156,13 @@ public class GameServer implements Runnable, Protocol
     @Override
     public String getResponseWithJSON(String requestJSON) {
         return Protocol.super.getResponseWithJSON(requestJSON);
+    }
+
+    private Response createErrorResponse(ResponseCode code, String targetError, String targetMessage)
+    {
+        JSONObject jsonResponse = new JSONObject();
+        jsonResponse.put("responseCode", targetError);
+        jsonResponse.put("responseData", targetMessage);
+        return new Response(code, jsonResponse.toString());
     }
 }

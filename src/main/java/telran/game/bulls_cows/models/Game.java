@@ -86,4 +86,9 @@ public class Game implements CsvConvertible
     {
         this.startDateTime = startDateTime;
     }
+
+    public void setFinishDateTime(LocalDateTime localDateTime)
+    {
+        this.finishDateTime = localDateTime;
+    }
 }

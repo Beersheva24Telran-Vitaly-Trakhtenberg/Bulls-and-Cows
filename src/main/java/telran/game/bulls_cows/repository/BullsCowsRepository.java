@@ -7,11 +7,15 @@ import telran.game.bulls_cows.exceptions.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 public interface BullsCowsRepository
 {
     boolean isUserExists(String gamerID);
     boolean isGamerInGame(String gamerID, Long gameId) throws UserNotFoundException, GameNotFoundException;
+
+    boolean isGamerExists(String gamerID);
+
     boolean isGameStarted(Long gameId) throws GameNotFoundException;
     boolean isGameFinished(Long gameId) throws GameNotFoundException;
     boolean isGameHasGamers(Long gameId) throws GameNotFoundException;
@@ -32,4 +36,7 @@ public interface BullsCowsRepository
     Long createGame(String secuence);
     void startGame(Long gameId, LocalDateTime startDateTime) throws GameNotFoundException, GameAlreadyStartedException;
     Game findGameById(Long gameId) throws GameNotFoundException;
+    void addMovieToGame(Long gameId, String userId, Object movie) throws UserNotAuthorizedException, GameNotFoundException, GameNotStartedException, UserNotFoundException;
+    List<Map<String, String>> getGamerMoves(Long gameId, String userId) throws GameNotFoundException, UserNotAuthorizedException;
+    void finishGame(Long gameId, String userId) throws GameNotFoundException, GameNotStartedException;
 }

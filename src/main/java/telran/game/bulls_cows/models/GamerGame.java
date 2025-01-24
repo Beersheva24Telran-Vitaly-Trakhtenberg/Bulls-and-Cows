@@ -51,4 +51,11 @@ public class GamerGame
     public void setGameId(Long gameId) {
         this.gameId = gameId;
     }
+
+    public boolean isWinner() {
+        return isWinner;
+    }
+    public void setWinner() {
+        this.isWinner = true;
+    }
 }

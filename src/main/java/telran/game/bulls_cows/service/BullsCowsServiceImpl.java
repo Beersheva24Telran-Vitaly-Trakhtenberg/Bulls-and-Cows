@@ -1,21 +1,18 @@
 package telran.game.bulls_cows.service;
 
 import org.json.JSONObject;
+import telran.game.bulls_cows.common.settings.Settings;
 import telran.game.bulls_cows.models.Game;
-import telran.game.bulls_cows.Moves;
 import telran.game.bulls_cows.common.SessionToken;
 import telran.game.bulls_cows.common.Tools;
 import telran.game.bulls_cows.exceptions.*;
 import telran.game.bulls_cows.repository.BullsCowsRepository;
 
-import javax.naming.AuthenticationException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class BullsCowsServiceImpl implements BullsCowsService
 {
@@ -180,25 +177,44 @@ public class BullsCowsServiceImpl implements BullsCowsService
         }
     }
 
-/*
     @Override
-    public void startGame(String gamerToken, Long game_id, String dateTimeStart) throws AuthenticationException {
+    public boolean isGameStarted(
+            Map<String,
+            Object> params
+        ) throws
+            GameNotFoundException,
+            UserNotAuthorizedException
+    {
+        checksIsTokenPresented(params);
+        String gamerToken = (String) params.get("userSessionToken");
+
         isSessionTokenValid(gamerToken);
+        if (!params.containsKey("gameId") || !(params.get("gameId") instanceof String)) {
+            throw new IllegalArgumentException("Missing or invalid parameter: 'gameId'");
+        }
+        Long gameId = Long.valueOf(params.get("gameId").toString());
+
+        return repository.isGameStarted(gameId);
     }
-*/
 
     @Override
-    public boolean isGameStarted(Long game_id) throws GameNotFoundException
+    public boolean isGameFinished(
+            Map<String,
+            Object> params
+        ) throws
+            GameNotFoundException,
+            UserNotAuthorizedException
     {
-/*
-        Game game = repository.findGameById(game_id);
-        boolean result = false;
-        if (game != null) {
-            result = game.isStarted();
+        checksIsTokenPresented(params);
+        String gamerToken = (String) params.get("userSessionToken");
+
+        isSessionTokenValid(gamerToken);
+        if (!params.containsKey("gameId") || !(params.get("gameId") instanceof String)) {
+            throw new IllegalArgumentException("Missing or invalid parameter: 'gameId'");
         }
-        return result;
-*/
-        return repository.isGameStarted(game_id);
+        Long gameId = Long.valueOf(params.get("gameId").toString());
+
+        return repository.isGameFinished(gameId);
     }
 
     @Override
@@ -232,9 +248,17 @@ public class BullsCowsServiceImpl implements BullsCowsService
     }
 
     @Override
-    public List<Long> getGamerGamingGames(Map<String, Object> params) throws AuthenticationException {
-        //isSessionTokenValid(gamerToken);
-        return List.of();
+    public List<Long> getGamerGamingGames(Map<String, Object> params) throws UserNotAuthorizedException {
+        checksIsTokenPresented(params);
+        String gamerToken = (String) params.get("userSessionToken");
+
+        isSessionTokenValid(gamerToken);
+        try {
+            List<Game> games = repository.findGamesOfGamer(SessionToken.getUserIdFromToken(gamerToken));
+            return games.stream().map(Game::getGameID).toList();
+        } catch (UserNotFoundException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -245,35 +269,87 @@ public class BullsCowsServiceImpl implements BullsCowsService
     }
 
     @Override
-    public List<Moves> getGamerMoves(
-            String gamerToken,
-            Long game_id
-        ) throws
+    public List<Map<String, String>> getGamerMoves(Map<String, Object> params)
+            throws
             GameNotFoundException,
-            UserNotAuthorizedException
-    {
+            UserNotAuthorizedException, GameNotStartedException, GameAlreadyFinishedException {
+        checksIsTokenPresented(params);
+        String gamerToken = (String) params.get("userSessionToken");
+
         isSessionTokenValid(gamerToken);
-        return List.of();
+        String gamerId = SessionToken.getUserIdFromToken(gamerToken);
+        if (!params.containsKey("gameId") || !(params.get("gameId") instanceof String)) {
+            throw new IllegalArgumentException("Missing or invalid parameter: 'gameId'");
+        }
+        Long gameId = Long.valueOf(params.get("gameId").toString());
+        if (!repository.isGameStarted(gameId)) {
+            throw new GameNotStartedException(gameId);
+        }
+        if (repository.isGameFinished(gameId)) {
+            throw new GameAlreadyFinishedException(gameId);
+        }
+        List<Map<String, String>> result = new ArrayList<>();
+        try {
+            result = repository.getGamerMoves(gameId, gamerId);
+        } catch (Exception e) {
+            var error = 1;  // FixMe remove after tests
+        }
+        return result;
     }
 
     @Override
-    public List<Moves> addGamerNewMove(
-            String sequence,
-            String gamerToken,
-            Long game_id
+    public Map<String, String> addGamerNewMove(
+            Map<String, Object> params
         ) throws
             GameNotFoundException,
-            UserNotAuthorizedException
-    {
+            UserNotAuthorizedException,
+            GameAlreadyFinishedException, IllegalSequenceException {
+        checksIsTokenPresented(params);
+        String gamerToken = (String) params.get("userSessionToken");
+
         isSessionTokenValid(gamerToken);
-        return List.of();
+        String gamerId = SessionToken.getUserIdFromToken(gamerToken);
+        Long gameId = null;
+        String sequence = "";
+        try {
+            if (!params.containsKey("gameId") || !(params.get("gameId") instanceof String)) {
+                throw new IllegalArgumentException("Missing or invalid parameter: 'gameId'");
+            }
+            gameId = Long.valueOf(params.get("gameId").toString());
+            if (repository.isGameFinished(gameId)) {
+                throw new GameAlreadyFinishedException(gameId);
+            }
+            if (!params.containsKey("sequence") || !(params.get("sequence") instanceof String)) {
+                throw new IllegalArgumentException("Missing or invalid parameter: 'sequence'");
+            }
+            sequence = params.get("sequence").toString();
+            HashMap<String, String> currentMovie = new HashMap<>();
+            try {
+                currentMovie = Tools.calculateSequenceResults(repository.findGameById(gameId).getSequence(), sequence);
+            } catch (IllegalSequenceException e) {
+                throw new IllegalSequenceException(sequence);
+            }
+            currentMovie.put("sequence", sequence);
+            repository.addMovieToGame(gameId, gamerId, currentMovie);
+            if (Integer.parseInt(currentMovie.get("numberBulls")) == Settings.LENGTH_OF_SEQUENCE) {
+                repository.finishGame(gameId, gamerId);
+                currentMovie.put("numberBulls", "WINNER");
+            }
+
+            return currentMovie;
+        } catch (GameNotFoundException e) {
+            throw new GameNotFoundException(gameId);
+        } catch (GameNotStartedException e) {
+            throw new RuntimeException(e);
+        } catch (UserNotFoundException e) {
+            throw new RuntimeException(e);
+        } catch (GameAlreadyFinishedException e) {
+            throw new GameAlreadyFinishedException(gameId);
+        } catch (IllegalSequenceException e) {
+            throw new IllegalSequenceException(sequence);
+        }
     }
 
-/*
-    public List<Game> getAllGames() {
-        return repository.findAllGames();
-    }
-*/
     private String extractInput(String key, String data) throws IllegalArgumentException {
         if (isJson(data)) {
             return parseJsonForKey(key, data);

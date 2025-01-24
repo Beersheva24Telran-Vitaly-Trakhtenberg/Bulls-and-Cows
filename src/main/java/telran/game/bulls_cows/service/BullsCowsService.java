@@ -4,6 +4,7 @@ import telran.game.bulls_cows.Moves;
 import telran.game.bulls_cows.exceptions.*;
 
 import javax.naming.AuthenticationException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -31,13 +32,13 @@ public interface BullsCowsService
     Long createGame(Map<String, Object> params) throws AuthenticationException, UserNotAuthorizedException;
     Long joinGame(Map<String, Object> params) throws AuthenticationException, GameAlreadyStartedException, UserNotFoundException, UserNotAuthorizedException;
     Long startGame(Map<String, Object> params) throws AuthenticationException, UserNotAuthorizedException, GameAlreadyStartedException;
-    //void startGame(String gamerToken, Long game_id, String dateTimeStart) throws AuthenticationException;
-    boolean isGameStarted(Long game_id) throws GameNotFoundException;
+    boolean isGameStarted(Map<String, Object> params) throws GameNotFoundException, UserNotAuthorizedException;
+    boolean isGameFinished(Map<String, Object> params) throws GameNotFoundException, UserNotAuthorizedException;
 
     List<Long> getAvailableGamesForStarting(Map<String, Object> params) throws AuthenticationException, UserNotFoundException, UserNotAuthorizedException;
     List<Long> getAvailableGamesForJoining(Map<String, Object> params) throws AuthenticationException, UserNotFoundException, UserNotAuthorizedException;
-    List<Long> getGamerGamingGames(Map<String, Object> params) throws AuthenticationException;
+    List<Long> getGamerGamingGames(Map<String, Object> params) throws AuthenticationException, UserNotAuthorizedException;
     List<Long> getGamerFinishedGames(Map<String, Object> params) throws AuthenticationException;
-    List<Moves> getGamerMoves(String gamerToken, Long game_id) throws GameNotFoundException, AuthenticationException, UserNotAuthorizedException;
-    List<Moves> addGamerNewMove(String sequence, String gamerToken, Long game_id) throws GameNotFoundException, AuthenticationException, UserNotAuthorizedException;
+    List<Map<String, String>> getGamerMoves(Map<String, Object> params) throws GameNotFoundException, AuthenticationException, UserNotAuthorizedException, GameNotStartedException, GameAlreadyFinishedException;
+    Map<String, String> addGamerNewMove(Map<String, Object> params) throws GameNotFoundException, UserNotAuthorizedException, GameAlreadyFinishedException, IllegalSequenceException;
 }
