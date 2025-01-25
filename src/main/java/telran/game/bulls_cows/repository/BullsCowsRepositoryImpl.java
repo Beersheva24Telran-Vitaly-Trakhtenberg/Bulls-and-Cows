@@ -11,6 +11,8 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 public class BullsCowsRepositoryImpl implements BullsCowsRepository
 {
@@ -429,20 +431,20 @@ public class BullsCowsRepositoryImpl implements BullsCowsRepository
             em.getTransaction().begin();
             Long gamerGameId = query.getSingleResult();
             {
-                GamerMoves gamerMovies = null;
+                GamerMoves gamerMovies;
                 if (movie instanceof String) {
                     gamerMovies = new GamerMoves(gamerGameId, (String) movie);
-                } else if (movie instanceof HashMap) {
-                    String sequence = ((HashMap<?, ?>) movie).get("sequence").toString();
-                    String bulls = ((HashMap<?, ?>) movie).get("numberBulls").toString();
-                    String cows = ((HashMap<?, ?>) movie).get("numberCows").toString();
+                } else if (movie instanceof HashMap || movie instanceof ConcurrentHashMap) {
+                    String sequence = ((ConcurrentMap<?, ?>) movie).get("sequence").toString();
+                    String bulls = ((ConcurrentMap<?, ?>) movie).get("numberBulls").toString();
+                    String cows = ((ConcurrentMap<?, ?>) movie).get("numberCows").toString();
                     Integer numberBulls = Integer.parseInt(bulls);
                     int numberCows = Integer.parseInt(cows);
                     gamerMovies = new GamerMoves(
                             gamerGameId,
-                            ((HashMap<?, ?>) movie).get("sequence").toString(),
-                            Integer.parseInt(((HashMap<?, ?>) movie).get("numberBulls").toString()),
-                            Integer.parseInt(((HashMap<?, ?>) movie).get("numberCows").toString())
+                            sequence,
+                            numberBulls,
+                            numberCows
                     );
                 } else {
                     throw new IllegalArgumentException("Invalid movie type");
@@ -482,10 +484,10 @@ public class BullsCowsRepositoryImpl implements BullsCowsRepository
 
             for (GamerMovesDTO gamerMove : gamerMovesDTOList) {
                 if (gamerMove != null) {
-                    Map<String, String> entity = new HashMap<>();
+                    Map<String, String> entity = new ConcurrentHashMap<>();
                     entity.put("sequence", gamerMove.getSequence());
-                    entity.put("numberBulls", String.valueOf(gamerMove.getResultBulls()));
                     entity.put("numberCows", String.valueOf(gamerMove.getResultCows()));
+                    entity.put("numberBulls", String.valueOf(gamerMove.getResultBulls()));
                     result.add(entity);
                 }
             }

@@ -74,7 +74,7 @@ public class GameServer implements Runnable, Protocol
      * Runs this operation.
      */
     @Override
-    public void run() {
+    public synchronized void run() {
         try {
             TCPServer tcp_server = new TCPServer(this, this.getPort());
             tcp_server.run();

@@ -13,6 +13,8 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 public class BullsCowsServiceImpl implements BullsCowsService
 {
@@ -63,7 +65,7 @@ public class BullsCowsServiceImpl implements BullsCowsService
      * @throws IllegalArgumentException if any of the parameters are missing or invalid.
      */
     @Override
-    public String signUp(Map<String, Object> params) throws UserAlreadyExistsException, IllegalArgumentException
+    public synchronized String signUp(Map<String, Object> params) throws UserAlreadyExistsException, IllegalArgumentException
     {
         if (!params.containsKey("username") || !(params.get("username") instanceof String gamerName)) {
             throw new IllegalArgumentException("Missing or invalid parameter: username");
@@ -103,7 +105,7 @@ public class BullsCowsServiceImpl implements BullsCowsService
     public void ping() {}
 
     @Override
-    public Long createGame(Map<String, Object> params) throws UserNotAuthorizedException
+    public synchronized Long createGame(Map<String, Object> params) throws UserNotAuthorizedException
     {
         checksIsTokenPresented(params);
         String gamerToken = (String) params.get("userSessionToken");
@@ -113,7 +115,7 @@ public class BullsCowsServiceImpl implements BullsCowsService
     }
 
     @Override
-    public Long joinGame(Map<String, Object> params) throws
+    public synchronized Long joinGame(Map<String, Object> params) throws
             GameAlreadyStartedException,
             UserNotFoundException,
             UserNotAuthorizedException
@@ -145,7 +147,7 @@ public class BullsCowsServiceImpl implements BullsCowsService
     }
 
     @Override
-    public Long startGame(Map<String, Object> params) throws UserNotAuthorizedException, GameAlreadyStartedException
+    public synchronized Long startGame(Map<String, Object> params) throws UserNotAuthorizedException, GameAlreadyStartedException
     {
         checksIsTokenPresented(params);
         String gamerToken = (String) params.get("userSessionToken");
@@ -298,12 +300,14 @@ public class BullsCowsServiceImpl implements BullsCowsService
     }
 
     @Override
-    public Map<String, String> addGamerNewMove(
+    public synchronized ConcurrentMap<String, String> addGamerNewMove(
             Map<String, Object> params
         ) throws
             GameNotFoundException,
             UserNotAuthorizedException,
-            GameAlreadyFinishedException, IllegalSequenceException {
+            GameAlreadyFinishedException,
+            IllegalSequenceException
+    {
         checksIsTokenPresented(params);
         String gamerToken = (String) params.get("userSessionToken");
 
@@ -323,9 +327,9 @@ public class BullsCowsServiceImpl implements BullsCowsService
                 throw new IllegalArgumentException("Missing or invalid parameter: 'sequence'");
             }
             sequence = params.get("sequence").toString();
-            HashMap<String, String> currentMovie = new HashMap<>();
+            ConcurrentMap<String, String> currentMovie;
             try {
-                currentMovie = Tools.calculateSequenceResults(repository.findGameById(gameId).getSequence(), sequence);
+                currentMovie = new ConcurrentHashMap<>(Tools.calculateSequenceResults(repository.findGameById(gameId).getSequence(), sequence));
             } catch (IllegalSequenceException e) {
                 throw new IllegalSequenceException(sequence);
             }
@@ -336,7 +340,12 @@ public class BullsCowsServiceImpl implements BullsCowsService
                 currentMovie.put("numberBulls", "WINNER");
             }
 
-            return currentMovie;
+            Map<String, String> orderedMovie = new LinkedHashMap<>();
+            orderedMovie.put("sequence", currentMovie.get("sequence"));
+            orderedMovie.put("numberCows", currentMovie.get("numberCows"));
+            orderedMovie.put("numberBulls", currentMovie.get("numberBulls"));
+
+            return new ConcurrentHashMap<>(orderedMovie);
         } catch (GameNotFoundException e) {
             throw new GameNotFoundException(gameId);
         } catch (GameNotStartedException e) {
