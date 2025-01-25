@@ -76,7 +76,7 @@ public class GameServer implements Runnable, Protocol
     @Override
     public synchronized void run() {
         try {
-            TCPServer tcp_server = new TCPServer(this, this.getPort());
+            TCPServer tcp_server = new TCPServer(this, this.getPort(), 1000000, 1000000, 20, 20);
             tcp_server.run();
         } catch (Exception e) {
             System.out.println("Client closed connection abnormally");
